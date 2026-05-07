@@ -1,4 +1,10 @@
-import { type FormEvent, useState } from "react";
+import {
+  type CSSProperties,
+  type FormEvent,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { supabase } from "./lib/supabase";
 import {
   AUSPICIAN_LOGO_FILES,
@@ -15,7 +21,8 @@ type FormState = {
   mail: string;
   telefono: string;
   cuantas_mascotas: number;
-  nombres_mascotas: string;
+  nombres_mascotas: string[];
+  aceptaTerminos: boolean;
 };
 
 /** PostgREST a veces pone el texto en `details`; el code no siempre llega como 23505 en el cliente. */
@@ -43,11 +50,51 @@ const initialForm: FormState = {
   dni: "",
   mail: "",
   telefono: "",
-  cuantas_mascotas: 0,
-  nombres_mascotas: "",
+  cuantas_mascotas: 1,
+  nombres_mascotas: [""],
+  aceptaTerminos: false,
 };
 
 const LOGO_PRINCIPAL_SRC = encodeURI("/Logo Mascoteada.png");
+
+const TERMS_SECTIONS: { title: string; body: string }[] = [
+  {
+    title: "1. Organización",
+    body: "Este evento es organizado por Grupo Animal SRL junto a las empresas que auspician y acompañan la propuesta. La inscripción es voluntaria, gratuita y se realiza únicamente a través del formulario disponible en este sitio.",
+  },
+  {
+    title: "2. Inscripción y sorteos",
+    body: "El formulario tiene como única finalidad registrar a las personas que participan de los sorteos y premios que se realizarán durante el evento. La inscripción no garantiza el otorgamiento de premio alguno; los ganadores serán seleccionados al azar entre las personas inscriptas.",
+  },
+  {
+    title: "3. Entrega de premios",
+    body: "Los premios se entregan únicamente al ganador presente en el evento, en el momento del sorteo. Si la persona ganadora no se encontrara presente al ser anunciada, se seleccionará otro ganador en su reemplazo. Grupo Animal SRL no realizará envíos ni asumirá ningún gasto de retiro, traslado o entrega de los premios fuera del lugar y horario del evento.",
+  },
+  {
+    title: "4. Datos personales",
+    body: "Al completar el formulario, el participante autoriza el tratamiento de sus datos personales (nombre, apellido, DNI, mail, teléfono y datos de su mascota) con la única finalidad de gestionar la inscripción, validar la identidad de los ganadores y comunicarse en caso de resultar premiado. Los datos no serán cedidos a terceros ajenos al evento sin consentimiento previo. El interesado puede ejercer sus derechos de acceso, rectificación y supresión escribiendo a la organización.",
+  },
+  {
+    title: "5. Asistencia con mascotas",
+    body: "Las mascotas son responsabilidad exclusiva de su dueño o tutor. Deben asistir con collar, correa o medio de sujeción adecuado y, en lo posible, con su esquema de vacunación al día. La organización podrá solicitar el retiro del predio de aquellas mascotas que muestren un comportamiento agresivo o que pongan en riesgo a otras personas o animales.",
+  },
+  {
+    title: "6. Conducta y seguridad",
+    body: "Quien participe del evento se compromete a seguir las indicaciones del personal de la organización y a respetar las normas de convivencia y seguridad del predio. La organización se reserva el derecho de admisión y permanencia.",
+  },
+  {
+    title: "7. Imagen y registro audiovisual",
+    body: "Durante el evento podrán tomarse fotografías y videos. Al asistir, el participante autoriza el uso no comercial de dicho material en redes sociales y comunicaciones del evento, salvo que manifieste expresamente su negativa al personal de la organización.",
+  },
+  {
+    title: "8. Modificaciones y fuerza mayor",
+    body: "La organización podrá modificar el cronograma, los premios o cualquier aspecto del evento por razones operativas o de fuerza mayor (incluidas condiciones climáticas), informando por sus canales habituales.",
+  },
+  {
+    title: "9. Aceptación",
+    body: "La marcación del casillero «Acepto los términos y condiciones» implica el conocimiento y la aceptación íntegra de las presentes condiciones por parte del participante.",
+  },
+];
 
 /** Forma orgánica tipo sitio principal: ~50% naranja, borde crema ~20% como acento. */
 function HeroBlob() {
@@ -72,15 +119,21 @@ function HeroBlob() {
 
 const infoCards = [
   {
-    title: "Inscripción segura",
-    text: "Tus datos se almacenan en base cifrada.",
+    title: "Evento gratuito",
+    text: "La entrada es libre para toda la familia. Vení a pasarla bien con nosotros.",
   },
-  { title: "Confirmación", text: "Te contactamos por mail con los detalles." },
   {
-    title: "Traé a tus mascotas",
-    text: "Indicá cuántas vienen y sus nombres.",
+    title: "Ubicación",
+    text: "Espacio María Morínigo, costanera de Posadas.",
   },
-  { title: "Evento 2026", text: "La Mascoteada — un día para celebrar." },
+  {
+    title: "Día y horario",
+    text: "10 de mayo, desde las 15:30 hs.",
+  },
+  {
+    title: "Premios",
+    text: "Registrate en el formulario y participá por sorteos e increíbles premios.",
+  },
 ];
 
 function InfoCardsGrid() {
@@ -109,6 +162,185 @@ function InfoCardsGrid() {
   );
 }
 
+const CONFETTI_COLORS = [
+  "#fe8627",
+  "#ffd792",
+  "#000000",
+  "#ffffff",
+  "#fb923c",
+  "#fde68a",
+];
+
+const CONFETTI_SHAPES: Array<"square" | "rect" | "circle"> = [
+  "square",
+  "rect",
+  "rect",
+  "circle",
+];
+
+type ConfettiPiece = {
+  id: number;
+  left: number;
+  size: number;
+  color: string;
+  delay: number;
+  duration: number;
+  drift: number;
+  rotate: number;
+  shape: "square" | "rect" | "circle";
+  rotateStart: number;
+};
+
+type SparkPiece = {
+  id: number;
+  x: number;
+  y: number;
+  size: number;
+  color: string;
+};
+
+function buildConfetti(count: number): ConfettiPiece[] {
+  const pieces: ConfettiPiece[] = [];
+  for (let i = 0; i < count; i++) {
+    pieces.push({
+      id: i,
+      left: Math.random() * 100,
+      size: 6 + Math.round(Math.random() * 10),
+      color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+      delay: Math.random() * 0.6,
+      duration: 2.6 + Math.random() * 2.2,
+      drift: Math.round((Math.random() - 0.5) * 240),
+      rotate: 360 + Math.round(Math.random() * 720),
+      shape: CONFETTI_SHAPES[i % CONFETTI_SHAPES.length],
+      rotateStart: Math.round(Math.random() * 180),
+    });
+  }
+  return pieces;
+}
+
+function buildSparks(count: number): SparkPiece[] {
+  const sparks: SparkPiece[] = [];
+  for (let i = 0; i < count; i++) {
+    const angle = (Math.PI * 2 * i) / count + Math.random() * 0.4;
+    const radius = 70 + Math.random() * 50;
+    sparks.push({
+      id: i,
+      x: Math.round(Math.cos(angle) * radius),
+      y: Math.round(Math.sin(angle) * radius),
+      size: 8 + Math.round(Math.random() * 6),
+      color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+    });
+  }
+  return sparks;
+}
+
+function CelebrationOverlay({ onClose }: { onClose: () => void }) {
+  const confetti = useMemo(() => buildConfetti(72), []);
+  const sparks = useMemo(() => buildSparks(14), []);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="celebration-title"
+      className="fixed inset-0 z-[60] flex items-center justify-center overflow-hidden bg-black/55 px-5 py-8"
+    >
+      <div
+        className="pointer-events-none absolute inset-0"
+        aria-hidden="true"
+      >
+        {confetti.map((p) => (
+          <span
+            key={p.id}
+            className="celebration-piece absolute top-0"
+            style={{
+              left: `${p.left}%`,
+              width: p.shape === "rect" ? p.size * 0.6 : p.size,
+              height: p.shape === "rect" ? p.size * 1.4 : p.size,
+              backgroundColor: p.color,
+              borderRadius: p.shape === "circle" ? "9999px" : "2px",
+              transform: `rotate(${p.rotateStart}deg)`,
+              "--confetti-duration": `${p.duration}s`,
+              "--confetti-delay": `${p.delay}s`,
+              "--confetti-drift": `${p.drift}px`,
+              "--confetti-rotate": `${p.rotate}deg`,
+            } as CSSProperties}
+          />
+        ))}
+      </div>
+
+      <div className="celebration-card relative w-full max-w-md rounded-3xl bg-white px-6 py-8 text-center shadow-2xl sm:px-9 sm:py-10">
+        <div className="pointer-events-none absolute left-1/2 top-10 -translate-x-1/2" aria-hidden>
+          {sparks.map((s) => (
+            <span
+              key={s.id}
+              className="celebration-spark absolute block rounded-full"
+              style={{
+                width: s.size,
+                height: s.size,
+                backgroundColor: s.color,
+                left: 0,
+                top: 0,
+                "--burst-x": `${s.x}px`,
+                "--burst-y": `${s.y}px`,
+              } as CSSProperties}
+            />
+          ))}
+        </div>
+
+        <div className="relative mx-auto flex h-20 w-20 items-center justify-center">
+          <span
+            className="celebration-badge absolute inset-0 rounded-full bg-mascoteada-orange"
+            aria-hidden
+          />
+          <svg
+            viewBox="0 0 48 48"
+            className="relative h-12 w-12 text-white"
+            fill="none"
+            aria-hidden
+          >
+            <path
+              d="M14 24.5l7 7 13-15"
+              stroke="currentColor"
+              strokeWidth="4.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+
+        <p className="mt-5 text-xs font-bold uppercase tracking-[0.32em] text-mascoteada-orange">
+          ¡Inscripción exitosa!
+        </p>
+        <h2
+          id="celebration-title"
+          className="mt-2 text-3xl font-bold leading-tight text-black sm:text-[2rem]"
+        >
+          ¡Estás dentro!
+        </h2>
+        <p className="mt-3 text-base leading-relaxed text-black/70">
+          Recibimos tu registro para{" "}
+          <span className="font-semibold text-black">La Mascoteada</span>. Te
+          esperamos el <span className="font-semibold">10 de mayo</span> desde
+          las 15:30 hs en el Espacio María Morínigo, costanera de Posadas.
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-black/55">
+          Tu DNI ya está cargado para participar de los sorteos. ¡Nos vemos en
+          el evento!
+        </p>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-7 inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-black px-6 py-3 text-base font-semibold text-white transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-mascoteada-orange/50"
+        >
+          ¡Genial!
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [submitting, setSubmitting] = useState(false);
@@ -116,6 +348,26 @@ function App() {
     kind: "success" | "error";
     message: string;
   } | null>(null);
+  const [showTerms, setShowTerms] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+
+  const modalOpen = showTerms || showCelebration;
+  useEffect(() => {
+    if (!modalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (showTerms) setShowTerms(false);
+        if (showCelebration) setShowCelebration(false);
+      }
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [modalOpen, showTerms, showCelebration]);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -139,7 +391,16 @@ function App() {
     const dni = form.dni.trim();
     const mail = form.mail.trim();
     const telefono = form.telefono.trim();
-    const nombres_mascotas = form.nombres_mascotas.trim() || null;
+    const n = form.cuantas_mascotas;
+    const nombresOk =
+      form.nombres_mascotas.length >= n &&
+      form.nombres_mascotas
+        .slice(0, n)
+        .every((s) => s.trim().length > 0);
+    const nombres_mascotas = form.nombres_mascotas
+      .slice(0, n)
+      .map((s) => s.trim())
+      .join(", ");
 
     if (!nombre || !apellido || !dni || !mail || !telefono) {
       setFeedback({
@@ -149,15 +410,31 @@ function App() {
       return;
     }
 
+    if (!form.aceptaTerminos) {
+      setFeedback({
+        kind: "error",
+        message: "Tenés que aceptar los términos y condiciones para continuar.",
+      });
+      return;
+    }
+
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
       setFeedback({ kind: "error", message: "Ingresá un mail válido." });
       return;
     }
 
-    if (form.cuantas_mascotas < 0 || !Number.isFinite(form.cuantas_mascotas)) {
+    if (n < 1 || !Number.isFinite(form.cuantas_mascotas)) {
       setFeedback({
         kind: "error",
-        message: "La cantidad de mascotas no es válida.",
+        message: "Registrá al menos una mascota.",
+      });
+      return;
+    }
+
+    if (!nombresOk) {
+      setFeedback({
+        kind: "error",
+        message: "Indicá el nombre de cada mascota.",
       });
       return;
     }
@@ -187,18 +464,12 @@ function App() {
     }
 
     setForm(initialForm);
-    setFeedback({
-      kind: "success",
-      message:
-        "¡Listo! Tu inscripción a La Mascoteada se registró correctamente.",
-    });
+    setFeedback(null);
+    setShowCelebration(true);
   }
 
   const inputClass =
-    "mt-1.5 box-border min-h-11 w-full min-w-0 touch-manipulation rounded-2xl border border-black/10 bg-neutral-50 px-4 py-3 text-base leading-normal text-black shadow-inner shadow-black/5 placeholder:text-black/35 outline-none transition focus:border-mascoteada-orange focus:bg-white focus:ring-2 focus:ring-mascoteada-orange/35";
-
-  const textareaClass =
-    "mt-1.5 box-border min-h-[5.5rem] w-full min-w-0 touch-manipulation rounded-2xl border border-black/10 bg-neutral-50 px-4 py-3 text-base leading-normal text-black shadow-inner shadow-black/5 placeholder:text-black/35 outline-none transition focus:border-mascoteada-orange focus:bg-white focus:ring-2 focus:ring-mascoteada-orange/35";
+    "mt-1.5 box-border min-h-11 w-full min-w-0 touch-manipulation rounded-2xl border border-black/10 bg-neutral-50 px-4 py-3 font-display font-normal text-base leading-normal text-black shadow-inner shadow-black/5 placeholder:text-black/35 outline-none transition focus:border-mascoteada-orange focus:bg-white focus:ring-2 focus:ring-mascoteada-orange/35";
 
   const labelClass = "block min-w-0 text-left text-sm font-semibold text-black";
 
@@ -226,7 +497,7 @@ function App() {
       ? "flex justify-center"
       : centered
         ? uniformCentered && files.length === 2
-          ? "flex flex-wrap justify-center gap-3 sm:flex-nowrap sm:gap-5"
+          ? "flex flex-wrap justify-center gap-3 xl:flex-nowrap xl:gap-5"
           : "flex flex-wrap justify-center gap-3 sm:gap-5"
         : "grid grid-cols-2 gap-3 sm:grid-cols-3";
     return (
@@ -263,38 +534,23 @@ function App() {
   }
 
   function InvitanPyramid() {
-    const tileTop =
-      "flex h-24 w-[10rem] shrink-0 items-center justify-center rounded-xl border border-black/10 bg-white px-3 py-3 shadow-sm sm:h-28 sm:w-[11.25rem]";
-    const tileBottom =
-      "flex h-[5.25rem] w-[6.85rem] shrink-0 items-center justify-center rounded-xl border border-black/10 bg-white px-2 py-2 shadow-sm sm:h-24 sm:w-[7.85rem]";
+    const invitan = [...INVITAN_ROW_TOP, ...INVITAN_ROW_BOTTOM];
+    const tileClass =
+      "flex h-20 w-full items-center justify-center rounded-xl border border-black/10 bg-white px-2 py-2 shadow-sm sm:h-24 sm:px-3 sm:py-3";
 
     return (
-      <div className="mt-5 flex flex-col items-center gap-3 sm:gap-4">
-        <div className="flex w-full flex-wrap justify-center gap-3 sm:flex-nowrap sm:gap-5">
-          {INVITAN_ROW_TOP.map((file) => (
-            <div key={file} className={tileTop}>
-              <img
-                src={sponsorLogoSrc(file)}
-                alt={`Invita ${altFromLogoFile(file)}`}
-                className="max-h-full max-w-full object-contain"
-                loading="lazy"
-              />
-            </div>
-          ))}
-        </div>
-        <div className="flex w-full flex-wrap justify-center gap-2 sm:flex-nowrap sm:gap-3">
-          {INVITAN_ROW_BOTTOM.map((file) => (
-            <div key={file} className={tileBottom}>
-              <img
-                src={sponsorLogoSrc(file)}
-                alt={`Invita ${altFromLogoFile(file)}`}
-                className="max-h-full max-w-full object-contain"
-                loading="lazy"
-              />
-            </div>
-          ))}
-        </div>
-      </div>
+      <ul className="mt-5 grid grid-cols-3 gap-2.5 sm:gap-3.5">
+        {invitan.map((file) => (
+          <li key={file} className={tileClass}>
+            <img
+              src={sponsorLogoSrc(file)}
+              alt={`Invita ${altFromLogoFile(file)}`}
+              className="max-h-full max-w-full object-contain"
+              loading="lazy"
+            />
+          </li>
+        ))}
+      </ul>
     );
   }
 
@@ -329,8 +585,8 @@ function App() {
             </p>
           </div>
 
-          <div className="mt-10 min-w-0 lg:col-span-2 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-x-10 xl:gap-x-12">
-            <div className="w-full max-w-[calc(42rem+3cm)] justify-self-start rounded-[2rem] border border-black/8 bg-white/90 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] sm:p-8 lg:p-8 xl:max-w-[calc(48rem+3cm)]">
+          <div className="mt-10 min-w-0 lg:col-span-2 lg:grid lg:grid-cols-[minmax(min(100%,calc((42rem+3cm)*0.6)),1fr)_auto] lg:items-start lg:gap-x-10 xl:grid-cols-[minmax(min(100%,calc((48rem+3cm)*0.6)),1fr)_auto] xl:gap-x-12">
+            <div className="mx-auto w-full max-w-[calc((42rem+3cm)*0.6)] rounded-[2rem] border border-black/8 bg-white/90 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] sm:p-8 lg:mx-0 lg:p-8 lg:justify-self-stretch xl:max-w-[calc((48rem+3cm)*0.6)]">
               <form onSubmit={onSubmit} className="min-w-0 max-w-full">
                 <div className="grid min-w-0 gap-4 sm:grid-cols-2">
                   <label className={labelClass}>
@@ -398,7 +654,7 @@ function App() {
                       value={form.telefono}
                       onChange={(e) => update("telefono", e.target.value)}
                       className={inputClass}
-                      placeholder="Código de área + número"
+                      placeholder="Código de área sin 0 + número sin 15"
                     />
                   </label>
 
@@ -408,35 +664,91 @@ function App() {
                       required
                       type="number"
                       name="cuantas_mascotas"
-                      min={0}
+                      min={1}
                       step={1}
                       value={
                         Number.isNaN(form.cuantas_mascotas)
                           ? ""
                           : form.cuantas_mascotas
                       }
-                      onChange={(e) =>
-                        update(
-                          "cuantas_mascotas",
-                          parseInt(e.target.value, 10) || 0,
-                        )
-                      }
+                      onChange={(e) => {
+                        const raw = parseInt(e.target.value, 10);
+                        const nextN =
+                          Number.isNaN(raw) || raw < 1 ? 1 : raw;
+                        setForm((prev) => {
+                          const names = [...prev.nombres_mascotas];
+                          while (names.length < nextN) names.push("");
+                          if (names.length > nextN)
+                            names.length = nextN;
+                          return {
+                            ...prev,
+                            cuantas_mascotas: nextN,
+                            nombres_mascotas: names,
+                          };
+                        });
+                      }}
                       className={inputClass}
                     />
                   </label>
 
-                  <label className={`${labelClass} block`}>
-                    Nombres de las mascotas
-                    <textarea
-                      name="nombres_mascotas"
-                      rows={3}
-                      value={form.nombres_mascotas}
+                  <div className="space-y-3">
+                    <p className={`${labelClass} !mb-0`}>
+                      Nombre de cada mascota
+                    </p>
+                    {Array.from(
+                      { length: form.cuantas_mascotas },
+                      (_, i) => (
+                        <input
+                          key={i}
+                          required
+                          name={`nombre_mascota_${i + 1}`}
+                          autoComplete="off"
+                          aria-label="Nombre mascota"
+                          value={form.nombres_mascotas[i] ?? ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setForm((prev) => {
+                              const next = [...prev.nombres_mascotas];
+                              next[i] = v;
+                              return {
+                                ...prev,
+                                nombres_mascotas: next,
+                              };
+                            });
+                          }}
+                          className={`${inputClass} !mt-0`}
+                          placeholder="Nombre mascota"
+                        />
+                      ),
+                    )}
+                  </div>
+
+                  <label className="mt-6 flex cursor-pointer items-start gap-3 text-left">
+                    <input
+                      type="checkbox"
+                      name="acepta_terminos"
+                      required
+                      checked={form.aceptaTerminos}
                       onChange={(e) =>
-                        update("nombres_mascotas", e.target.value)
+                        update("aceptaTerminos", e.target.checked)
                       }
-                      className={textareaClass}
-                      placeholder="Separá con comas si son varias: Firulais, Mimi…"
+                      className="mt-1 h-4 w-4 shrink-0 rounded border-black/25 text-mascoteada-orange focus:ring-2 focus:ring-mascoteada-orange/40"
                     />
+                    <span className="text-sm font-normal leading-snug text-black">
+                      Acepto los{" "}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowTerms(true);
+                        }}
+                        className="cursor-pointer font-semibold text-mascoteada-orange underline-offset-2 hover:underline focus:underline focus:outline-none"
+                      >
+                        términos y condiciones
+                      </button>{" "}
+                      del evento.
+                    </span>
                   </label>
 
                   <button
@@ -447,14 +759,10 @@ function App() {
                     {submitting ? "Enviando…" : "Enviar inscripción"}
                   </button>
 
-                  {feedback ? (
+                  {feedback && feedback.kind === "error" ? (
                     <p
                       role="status"
-                      className={
-                        feedback.kind === "success"
-                          ? "mt-6 rounded-2xl border border-mascoteada-cream/80 bg-mascoteada-cream/25 px-4 py-3 text-sm text-black/85"
-                          : "mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900"
-                      }
+                      className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900"
                     >
                       {feedback.message}
                     </p>
@@ -508,6 +816,86 @@ function App() {
           </div>
         </main>
       </div>
+
+      {showCelebration ? <CelebrationOverlay onClose={() => setShowCelebration(false)} /> : null}
+
+      {showTerms ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="terms-title"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 p-0 sm:items-center sm:p-6"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowTerms(false);
+          }}
+        >
+          <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl">
+            <div className="flex items-start justify-between gap-4 border-b border-black/10 px-5 py-4 sm:px-7 sm:py-5">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.24em] text-mascoteada-orange">
+                  La Mascoteada
+                </p>
+                <h2
+                  id="terms-title"
+                  className="mt-1 text-lg font-semibold text-black sm:text-xl"
+                >
+                  Términos y Condiciones
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTerms(false)}
+                aria-label="Cerrar términos y condiciones"
+                className="-mr-2 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-black/60 transition hover:bg-black/5 hover:text-black focus:outline-none focus:ring-2 focus:ring-mascoteada-orange/40"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden
+                >
+                  <path
+                    d="M6 6l12 12M18 6L6 18"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
+              <p className="text-sm leading-relaxed text-black/70">
+                Al inscribirte y participar de La Mascoteada, aceptás las
+                siguientes condiciones:
+              </p>
+              <div className="mt-5 space-y-5">
+                {TERMS_SECTIONS.map((s) => (
+                  <section key={s.title}>
+                    <h3 className="text-sm font-semibold text-black sm:text-base">
+                      {s.title}
+                    </h3>
+                    <p className="mt-1 text-sm leading-relaxed text-black/75">
+                      {s.body}
+                    </p>
+                  </section>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 border-t border-black/10 bg-neutral-50 px-5 py-4 sm:px-7">
+              <button
+                type="button"
+                onClick={() => setShowTerms(false)}
+                className="min-h-11 rounded-2xl bg-mascoteada-orange px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-mascoteada-orange/25 transition hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-mascoteada-orange/40"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -120,9 +120,14 @@ function App() {
     setSubmitting(false)
 
     if (error) {
+      const isDupDni =
+        error.code === '23505' ||
+        /duplicate key|unique constraint|already exists/i.test(error.message ?? '')
       setFeedback({
         kind: 'error',
-        message: error.message || 'No se pudo guardar la inscripción.',
+        message: isDupDni
+          ? 'Este DNI ya está inscripto. Si necesitás actualizar tus datos, contactá a la organización del evento.'
+          : error.message || 'No se pudo guardar la inscripción.',
       })
       return
     }

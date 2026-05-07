@@ -154,21 +154,21 @@ const infoCards = [
 
 function InfoCardsGrid() {
   return (
-    <div className="grid w-full max-w-full grid-cols-2 gap-3.5 sm:gap-4 lg:max-w-[64rem] xl:max-w-[72rem]">
+    <div className="grid w-full max-w-full grid-cols-2 gap-3.5 sm:gap-4 lg:grid-cols-4 lg:gap-5">
       {infoCards.map((card) => (
         <div
           key={card.title}
-          className="flex min-h-0 items-start gap-3 rounded-2xl bg-black px-3.5 py-3.5 text-left text-white sm:gap-3.5 sm:px-4 sm:py-4 lg:px-4 lg:py-4.5"
+          className="flex min-h-0 items-start gap-3 rounded-2xl bg-black px-3.5 py-3.5 text-left text-white sm:gap-3.5 sm:px-4 sm:py-4 lg:px-5 lg:py-5"
         >
           <span
             className="mt-0.5 h-9 w-1 shrink-0 rounded-full bg-mascoteada-orange sm:h-10 lg:h-11"
             aria-hidden
           />
           <div className="min-w-0">
-            <p className="text-base font-semibold leading-snug sm:text-[1.0625rem] lg:text-lg">
+            <p className="text-base font-semibold leading-snug sm:text-[1.0625rem] lg:text-base xl:text-lg">
               {card.title}
             </p>
-            <p className="mt-1.5 text-sm leading-relaxed text-white/75 sm:text-[0.9375rem] lg:text-base">
+            <p className="mt-1.5 text-sm leading-relaxed text-white/75 sm:text-[0.9375rem] lg:text-[0.9375rem] xl:text-base">
               {card.text}
             </p>
           </div>
@@ -570,6 +570,35 @@ function App() {
     );
   }
 
+  const sponsorsPanel = (
+    <div className="max-w-full space-y-10 rounded-2xl border border-black/8 bg-white px-4 py-6 shadow-[0_8px_40px_rgba(0,0,0,0.04)] sm:px-6">
+      <div>
+        <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-black/70">
+          Organiza
+        </p>
+        <SponsorGrid files={ORGANIZA_LOGO_FILES} namePrefix="Organiza" />
+      </div>
+      <div className="border-t border-black/10 pt-10">
+        <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-black/70">
+          Auspician
+        </p>
+        <SponsorGrid
+          files={AUSPICIAN_LOGO_FILES}
+          namePrefix="Auspicia"
+          centered
+          suppressTopMargin
+          listClassName="mt-4"
+        />
+      </div>
+      <div className="border-t border-black/10 pt-10">
+        <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-black/70">
+          Invitan
+        </p>
+        <InvitanPyramid />
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-dvh min-h-screen bg-white font-display text-black">
       <div className="relative overflow-hidden">
@@ -783,53 +812,27 @@ function App() {
                       {feedback.message}
                     </p>
                   ) : null}
-
-                  <div className="mt-10 max-w-full space-y-10 rounded-2xl border border-black/8 bg-white px-4 py-6 shadow-[0_8px_40px_rgba(0,0,0,0.04)] sm:px-6">
-                    <div>
-                      <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-black/70">
-                        Organiza
-                      </p>
-                      <SponsorGrid
-                        files={ORGANIZA_LOGO_FILES}
-                        namePrefix="Organiza"
-                      />
-                    </div>
-                    <div className="border-t border-black/10 pt-10">
-                      <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-black/70">
-                        Auspician
-                      </p>
-                      <SponsorGrid
-                        files={AUSPICIAN_LOGO_FILES}
-                        namePrefix="Auspicia"
-                        centered
-                        suppressTopMargin
-                        listClassName="mt-4"
-                      />
-                    </div>
-                    <div className="border-t border-black/10 pt-10">
-                      <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-black/70">
-                        Invitan
-                      </p>
-                      <InvitanPyramid />
-                    </div>
-                  </div>
                 </div>
               </form>
             </div>
 
-            <aside className="relative z-10 hidden min-w-0 lg:block lg:w-full lg:max-w-[min(100%,64rem)] lg:pt-28 lg:pl-2 xl:max-w-[72rem]">
-              <InfoCardsGrid />
+            <aside className="relative z-10 mx-auto mt-8 hidden w-full min-w-0 max-w-[calc((42rem+3cm)*0.6)] lg:mx-0 lg:mt-0 lg:block lg:max-w-[24rem] lg:pl-2 xl:max-w-[28rem]">
+              {sponsorsPanel}
             </aside>
+          </div>
+
+          <div className="mx-auto mt-8 w-full max-w-[calc((42rem+3cm)*0.6)] lg:hidden">
+            {sponsorsPanel}
+          </div>
+
+          <div className="mt-12 w-full lg:col-span-2 lg:mt-14">
+            <InfoCardsGrid />
           </div>
 
           <p className="mx-auto mt-10 max-w-xl text-center text-sm text-black/50 lg:col-span-2 lg:mx-0 lg:text-left">
             ¿Problemas con el formulario? Revisá la conexión o contactá a la
             organización del evento.
           </p>
-
-          <div className="mt-10 lg:col-span-2 lg:hidden">
-            <InfoCardsGrid />
-          </div>
         </main>
       </div>
 

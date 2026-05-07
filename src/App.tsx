@@ -467,7 +467,7 @@ function App() {
           </div>
 
           <aside className="relative z-10 hidden min-w-0 self-start lg:block">
-            <div className="lg:pl-2 lg:pt-[clamp(11rem,30vh,21rem)] xl:pt-[clamp(12rem,32vh,23rem)]">
+            <div className="lg:pl-2 lg:pt-[clamp(26rem,52vh,40rem)] xl:pt-[clamp(28rem,54vh,42rem)] 2xl:pt-[clamp(30rem,56vh,44rem)]">
               <InfoCardsGrid />
             </div>
           </aside>

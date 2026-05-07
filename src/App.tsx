@@ -6,6 +6,7 @@ import {
   useState,
 } from "react";
 import { supabase } from "./lib/supabase";
+import StatsPage from "./pages/StatsPage";
 import {
   AUSPICIAN_LOGO_FILES,
   INVITAN_ROW_BOTTOM,
@@ -13,6 +14,38 @@ import {
   ORGANIZA_LOGO_FILES,
   sponsorLogoSrc,
 } from "./sponsors";
+
+/** Rutas internas reconocidas (path o hash). Cambiá el valor para mover la URL. */
+const STATS_PATHS = new Set<string>([
+  "/contador",
+  "/stats",
+  "/dashboard",
+]);
+
+function getRouteKey(): "stats" | "form" {
+  if (typeof window === "undefined") return "form";
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  if (STATS_PATHS.has(path)) return "stats";
+  const hash = window.location.hash.replace(/^#/, "").replace(/\/+$/, "");
+  if (hash && STATS_PATHS.has(hash.startsWith("/") ? hash : `/${hash}`)) {
+    return "stats";
+  }
+  return "form";
+}
+
+function useRoute(): "stats" | "form" {
+  const [route, setRoute] = useState<"stats" | "form">(() => getRouteKey());
+  useEffect(() => {
+    const onChange = () => setRoute(getRouteKey());
+    window.addEventListener("popstate", onChange);
+    window.addEventListener("hashchange", onChange);
+    return () => {
+      window.removeEventListener("popstate", onChange);
+      window.removeEventListener("hashchange", onChange);
+    };
+  }, []);
+  return route;
+}
 
 type FormState = {
   nombre: string;
@@ -356,6 +389,14 @@ function CelebrationOverlay({ onClose }: { onClose: () => void }) {
 }
 
 function App() {
+  const route = useRoute();
+  if (route === "stats") {
+    return <StatsPage />;
+  }
+  return <RegisterApp />;
+}
+
+function RegisterApp() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{

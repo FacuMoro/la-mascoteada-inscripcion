@@ -307,10 +307,11 @@ function App() {
             </p>
           </div>
 
-          <form
-            onSubmit={onSubmit}
-            className="mt-10 max-w-full rounded-[2rem] border border-black/8 bg-white/90 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] sm:p-8 lg:col-span-2 lg:mt-10 lg:max-w-none lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-x-10 lg:gap-y-6 lg:p-8 xl:max-w-[52rem] xl:gap-x-12"
-          >
+          <div className="mt-10 max-w-full rounded-[2rem] border border-black/8 bg-white/90 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] sm:p-8 lg:col-span-2 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-x-10 lg:gap-y-6 lg:p-8 xl:max-w-[52rem] xl:gap-x-12">
+            <form
+              onSubmit={onSubmit}
+              className="min-w-0 max-w-full lg:contents"
+            >
             <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:col-span-2">
               <label className={labelClass}>
                 Nombre
@@ -458,10 +459,12 @@ function App() {
               </div>
             </div>
 
+            </form>
+
             <aside className="relative z-10 hidden min-w-0 lg:col-start-2 lg:row-start-2 lg:block lg:max-w-[min(100%,20rem)] lg:pl-2 lg:pt-1 xl:max-w-[22rem]">
               <InfoCardsGrid />
             </aside>
-          </form>
+          </div>
 
           <p className="mx-auto mt-10 max-w-xl text-center text-sm text-black/50 lg:col-span-2 lg:mx-0 lg:text-left">
             ¿Problemas con el formulario? Revisá la conexión o contactá a la organización del

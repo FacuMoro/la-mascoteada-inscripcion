@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from 'react'
-import { isSupabaseConfigured, supabase } from './lib/supabase'
+import { supabase } from './lib/supabase'
 import {
   AUSPICIAN_LOGO_FILES,
   INVITAN_ROW_BOTTOM,
@@ -73,11 +73,11 @@ function App() {
     e.preventDefault()
     setFeedback(null)
 
-    if (!isSupabaseConfigured()) {
+    if (!supabase) {
       setFeedback({
         kind: 'error',
         message:
-          'Falta configurar VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY (.env.local).',
+          'Falta configurar VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en Cloudflare Pages (Variables de entorno) y volver a desplegar.',
       })
       return
     }

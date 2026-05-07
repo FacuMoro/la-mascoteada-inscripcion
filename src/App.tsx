@@ -525,10 +525,10 @@ function App() {
             key={file}
             className={
               single
-                ? "flex w-full max-w-[240px] items-center justify-center rounded-xl border border-black/10 bg-white px-6 py-5 shadow-sm"
+                ? "flex w-full max-w-[240px] items-center justify-center rounded-2xl bg-white px-6 py-5 shadow-[0_8px_24px_rgba(0,0,0,0.06)] ring-1 ring-black/5"
                 : uniformCentered
-                  ? "flex h-24 w-[9.5rem] shrink-0 items-center justify-center rounded-xl border border-black/10 bg-white px-3 py-3 shadow-sm sm:h-28 sm:w-44"
-                  : "flex items-center justify-center rounded-xl border border-black/10 bg-white px-3 py-4 shadow-sm"
+                  ? "flex h-24 w-[9.5rem] shrink-0 items-center justify-center rounded-2xl bg-white px-3 py-3 shadow-[0_6px_20px_rgba(0,0,0,0.06)] ring-1 ring-black/5 sm:h-28 sm:w-44"
+                  : "flex items-center justify-center rounded-2xl bg-white px-3 py-4 shadow-[0_6px_20px_rgba(0,0,0,0.06)] ring-1 ring-black/5"
             }
           >
             <img
@@ -552,7 +552,7 @@ function App() {
   function InvitanPyramid() {
     const invitan = [...INVITAN_ROW_TOP, ...INVITAN_ROW_BOTTOM];
     const tileClass =
-      "flex h-20 w-full items-center justify-center rounded-xl border border-black/10 bg-white px-2 py-2 shadow-sm sm:h-24 sm:px-3 sm:py-3";
+      "flex h-20 w-full items-center justify-center rounded-2xl bg-white px-2 py-2 shadow-[0_6px_20px_rgba(0,0,0,0.06)] ring-1 ring-black/5 sm:h-24 sm:px-3 sm:py-3";
 
     return (
       <ul className="mt-5 grid grid-cols-3 gap-2.5 sm:gap-3.5">
@@ -570,18 +570,36 @@ function App() {
     );
   }
 
+  const sponsorEyebrow = (label: string) => (
+    <p className="flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.32em] text-black/45">
+      <span
+        className="h-px w-6 bg-black/15 sm:w-7"
+        aria-hidden
+      />
+      <span
+        className="inline-block h-1.5 w-1.5 rounded-full bg-mascoteada-orange"
+        aria-hidden
+      />
+      <span>{label}</span>
+      <span
+        className="inline-block h-1.5 w-1.5 rounded-full bg-mascoteada-orange"
+        aria-hidden
+      />
+      <span
+        className="h-px w-6 bg-black/15 sm:w-7"
+        aria-hidden
+      />
+    </p>
+  );
+
   const sponsorsPanel = (
-    <div className="max-w-full space-y-10 rounded-2xl border border-black/8 bg-white px-4 py-6 shadow-[0_8px_40px_rgba(0,0,0,0.04)] sm:px-6">
-      <div>
-        <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-black/70">
-          Organiza
-        </p>
+    <div className="space-y-9 sm:space-y-11">
+      <section>
+        {sponsorEyebrow("Organiza")}
         <SponsorGrid files={ORGANIZA_LOGO_FILES} namePrefix="Organiza" />
-      </div>
-      <div className="border-t border-black/10 pt-10">
-        <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-black/70">
-          Auspician
-        </p>
+      </section>
+      <section>
+        {sponsorEyebrow("Auspician")}
         <SponsorGrid
           files={AUSPICIAN_LOGO_FILES}
           namePrefix="Auspicia"
@@ -589,13 +607,11 @@ function App() {
           suppressTopMargin
           listClassName="mt-4"
         />
-      </div>
-      <div className="border-t border-black/10 pt-10">
-        <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-black/70">
-          Invitan
-        </p>
+      </section>
+      <section>
+        {sponsorEyebrow("Invitan")}
         <InvitanPyramid />
-      </div>
+      </section>
     </div>
   );
 

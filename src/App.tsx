@@ -108,7 +108,7 @@ function App() {
     }
 
     setSubmitting(true)
-    const { error } = await supabase.from('usuarios_evento').insert({
+    const { error } = await supabase.from('usuarios_mascoteada').insert({
       nombre,
       apellido,
       dni,

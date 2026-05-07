@@ -335,14 +335,12 @@ function CelebrationOverlay({ onClose }: { onClose: () => void }) {
           ¡Estás dentro!
         </h2>
         <p className="mt-3 text-base leading-relaxed text-black/70">
-          Recibimos tu registro para{" "}
-          <span className="font-semibold text-black">La Mascoteada</span>. Te
-          esperamos el <span className="font-semibold">10 de mayo</span> desde
+          Ya estás participando por premios increíbles. Te esperamos el{" "}
+          <span className="font-semibold text-black">10 de mayo</span> desde
           las 15:30 hs en el Espacio María Morínigo, costanera de Posadas.
         </p>
-        <p className="mt-2 text-sm leading-relaxed text-black/55">
-          Tu DNI ya está cargado para participar de los sorteos. ¡Nos vemos en
-          el evento!
+        <p className="mt-3 text-base font-semibold leading-relaxed text-black">
+          ¡Nos vemos en el evento!
         </p>
 
         <button

@@ -59,40 +59,56 @@ const LOGO_PRINCIPAL_SRC = encodeURI("/Logo Mascoteada.png");
 
 const TERMS_SECTIONS: { title: string; body: string }[] = [
   {
-    title: "1. Organización",
-    body: "Este evento es organizado por Grupo Animal SRL junto a las empresas que auspician y acompañan la propuesta. La inscripción es voluntaria, gratuita y se realiza únicamente a través del formulario disponible en este sitio.",
+    title: "1. Responsable y organización",
+    body: "El evento es organizado por Grupo Animal SRL junto a las empresas que auspician y acompañan la propuesta. A los fines de la Ley 25.326 de Protección de Datos Personales, el responsable del tratamiento de datos es Grupo Animal SRL, con domicilio en Av. Francisco de Haro 4505, Posadas, Misiones, República Argentina. Para cualquier consulta o reclamo vinculado a tus datos podés escribirnos a contacto@animalworldveterinaria.com.ar. La inscripción al evento es voluntaria, gratuita y se realiza únicamente a través del formulario disponible en este sitio.",
   },
   {
     title: "2. Inscripción y sorteos",
-    body: "El formulario tiene como única finalidad registrar a las personas que participan de los sorteos y premios que se realizarán durante el evento. La inscripción no garantiza el otorgamiento de premio alguno; los ganadores serán seleccionados al azar entre las personas inscriptas.",
+    body: "El formulario tiene como finalidad principal registrar a las personas que participan de los sorteos y premios que se realizarán durante el evento. La inscripción no garantiza el otorgamiento de premio alguno; los ganadores serán seleccionados al azar entre las personas inscriptas.",
   },
   {
     title: "3. Entrega de premios",
     body: "Los premios se entregan únicamente al ganador presente en el evento, en el momento del sorteo. Si la persona ganadora no se encontrara presente al ser anunciada, se seleccionará otro ganador en su reemplazo. Grupo Animal SRL no realizará envíos ni asumirá ningún gasto de retiro, traslado o entrega de los premios fuera del lugar y horario del evento.",
   },
   {
-    title: "4. Datos personales",
-    body: "Al completar el formulario, el participante autoriza el tratamiento de sus datos personales (nombre, apellido, DNI, mail, teléfono y datos de su mascota) con la única finalidad de gestionar la inscripción, validar la identidad de los ganadores y comunicarse en caso de resultar premiado. Los datos no serán cedidos a terceros ajenos al evento sin consentimiento previo. El interesado puede ejercer sus derechos de acceso, rectificación y supresión escribiendo a la organización.",
+    title: "4. Datos personales y finalidades",
+    body: "Al completar el formulario, el participante presta su consentimiento libre, expreso e informado para que Grupo Animal SRL trate sus datos personales (nombre, apellido, DNI, mail, teléfono y datos de su mascota) con las siguientes finalidades: (a) gestionar la inscripción al evento, (b) validar la identidad de los participantes y de los eventuales ganadores, (c) contactar al participante en caso de resultar premiado y (d) realizar acciones de comunicación y marketing posteriores por parte de Grupo Animal SRL relacionadas con sus servicios y eventos (por ejemplo, novedades, promociones o futuras ediciones). El participante podrá oponerse en cualquier momento al uso de sus datos con fines de marketing escribiendo a contacto@animalworldveterinaria.com.ar, sin que ello afecte su inscripción al evento.",
   },
   {
-    title: "5. Asistencia con mascotas",
-    body: "Las mascotas son responsabilidad exclusiva de su dueño o tutor. Deben asistir con collar, correa o medio de sujeción adecuado y, en lo posible, con su esquema de vacunación al día. La organización podrá solicitar el retiro del predio de aquellas mascotas que muestren un comportamiento agresivo o que pongan en riesgo a otras personas o animales.",
+    title: "5. Conservación, seguridad y derechos",
+    body: "Los datos se conservarán por el tiempo necesario para cumplir con las finalidades antes descriptas y con las obligaciones legales aplicables. Se aplican medidas razonables de seguridad para proteger la información. El titular de los datos puede ejercer en cualquier momento sus derechos de acceso, rectificación, actualización y supresión, de conformidad con la Ley 25.326, escribiendo a contacto@animalworldveterinaria.com.ar. La autoridad de aplicación en Argentina es la Agencia de Acceso a la Información Pública (AAIP), ante la cual el titular tiene derecho a presentar reclamos.",
   },
   {
-    title: "6. Conducta y seguridad",
+    title: "6. Proveedores y almacenamiento",
+    body: "Para la prestación del servicio de inscripción se utilizan proveedores tecnológicos de terceros. En particular, los datos cargados a través de este formulario se almacenan en la plataforma Supabase (servicio gestionado de base de datos), que actúa como encargado de tratamiento por cuenta de Grupo Animal SRL. Esto puede implicar el almacenamiento o procesamiento de los datos en servidores ubicados fuera de la República Argentina; en tales casos, Grupo Animal SRL adopta los recaudos razonables para que el tratamiento se realice con un nivel adecuado de protección y de acuerdo con la normativa argentina aplicable.",
+  },
+  {
+    title: "7. Cesión a terceros",
+    body: "Los datos personales no serán cedidos a terceros ajenos al evento sin consentimiento previo del titular, salvo cuando dicha comunicación resulte necesaria para cumplir con los fines de la inscripción, con obligaciones legales o ante requerimientos de autoridades competentes.",
+  },
+  {
+    title: "8. Menores de edad",
+    body: "La inscripción está dirigida a personas mayores de 18 años. Los menores de edad podrán asistir al evento con sus mascotas siempre acompañados por su madre, padre, tutor o adulto responsable. La inscripción del menor en el sorteo solo puede realizarla su madre, padre, tutor o representante legal, completando el formulario con sus propios datos y prestando consentimiento expreso por el menor. Al hacerlo, el adulto responsable declara contar con autorización suficiente y se hace responsable por la información proporcionada y por el cuidado del menor y la mascota durante el evento. En caso de detectarse que un menor de edad se inscribió por sí mismo sin intervención de un adulto responsable, Grupo Animal SRL podrá eliminar dicho registro y excluirlo de los sorteos.",
+  },
+  {
+    title: "9. Asistencia con mascotas",
+    body: "Las mascotas son responsabilidad exclusiva de su dueño, tutor o adulto responsable. Deben asistir con collar, correa o medio de sujeción adecuado y, en lo posible, con su esquema de vacunación al día. La organización podrá solicitar el retiro del predio de aquellas mascotas que muestren un comportamiento agresivo o que pongan en riesgo a otras personas o animales.",
+  },
+  {
+    title: "10. Conducta y seguridad",
     body: "Quien participe del evento se compromete a seguir las indicaciones del personal de la organización y a respetar las normas de convivencia y seguridad del predio. La organización se reserva el derecho de admisión y permanencia.",
   },
   {
-    title: "7. Imagen y registro audiovisual",
-    body: "Durante el evento podrán tomarse fotografías y videos. Al asistir, el participante autoriza el uso no comercial de dicho material en redes sociales y comunicaciones del evento, salvo que manifieste expresamente su negativa al personal de la organización.",
+    title: "11. Imagen y registro audiovisual",
+    body: "Durante el evento podrán tomarse fotografías y videos. Al asistir, el participante autoriza el uso no comercial de dicho material en redes sociales y comunicaciones del evento, salvo que manifieste expresamente su negativa al personal de la organización. En el caso de imágenes en las que aparezcan menores de edad, el adulto responsable podrá solicitar en cualquier momento que se retiren del material difundido.",
   },
   {
-    title: "8. Modificaciones y fuerza mayor",
+    title: "12. Modificaciones y fuerza mayor",
     body: "La organización podrá modificar el cronograma, los premios o cualquier aspecto del evento por razones operativas o de fuerza mayor (incluidas condiciones climáticas), informando por sus canales habituales.",
   },
   {
-    title: "9. Aceptación",
-    body: "La marcación del casillero «Acepto los términos y condiciones» implica el conocimiento y la aceptación íntegra de las presentes condiciones por parte del participante.",
+    title: "13. Aceptación",
+    body: "La marcación del casillero «Acepto los términos y condiciones» implica el conocimiento y la aceptación íntegra de las presentes condiciones por parte del participante o, en su caso, del adulto responsable que inscribe al menor.",
   },
 ];
 

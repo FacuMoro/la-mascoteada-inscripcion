@@ -330,7 +330,7 @@ function App() {
           </div>
 
           <div className="mt-10 min-w-0 lg:col-span-2 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-x-10 xl:gap-x-12">
-            <div className="w-full max-w-2xl justify-self-start rounded-[2rem] border border-black/8 bg-white/90 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] sm:p-8 lg:p-8 xl:max-w-[48rem]">
+            <div className="w-full max-w-[calc(42rem+3cm)] justify-self-start rounded-[2rem] border border-black/8 bg-white/90 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] sm:p-8 lg:p-8 xl:max-w-[calc(48rem+3cm)]">
               <form onSubmit={onSubmit} className="min-w-0 max-w-full">
                 <div className="grid min-w-0 gap-4 sm:grid-cols-2">
                   <label className={labelClass}>

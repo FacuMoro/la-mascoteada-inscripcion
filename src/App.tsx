@@ -85,7 +85,7 @@ const infoCards = [
 
 function InfoCardsGrid() {
   return (
-    <div className="grid grid-cols-2 gap-3.5 sm:gap-4 lg:max-w-lg xl:max-w-xl">
+    <div className="grid w-full max-w-full grid-cols-2 gap-3.5 sm:gap-4 lg:max-w-[64rem] xl:max-w-[72rem]">
       {infoCards.map((card) => (
         <div
           key={card.title}
@@ -491,7 +491,7 @@ function App() {
               </form>
             </div>
 
-            <aside className="relative z-10 hidden min-w-0 lg:block lg:max-w-[min(100%,24rem)] lg:pt-28 lg:pl-2 xl:max-w-[26rem]">
+            <aside className="relative z-10 hidden min-w-0 lg:block lg:w-full lg:max-w-[min(100%,64rem)] lg:pt-28 lg:pl-2 xl:max-w-[72rem]">
               <InfoCardsGrid />
             </aside>
           </div>

@@ -221,9 +221,10 @@ export default function StatsPage() {
       return;
     }
     if (!silent) setRefreshing(true);
-    const { data, count, error: err } = await supabase
-      .from("usuarios_mascoteada")
-      .select("cuantas_mascotas", { count: "exact" });
+
+    // Usamos un RPC con SECURITY DEFINER que devuelve solo los conteos agregados,
+    // sin exponer datos personales. Evita necesidad de policy de SELECT en la tabla.
+    const { data, error: err } = await supabase.rpc("get_mascoteada_stats");
 
     if (err) {
       setError(err.message);
@@ -232,11 +233,12 @@ export default function StatsPage() {
       return;
     }
 
-    const personas = count ?? data?.length ?? 0;
-    const mascotas = (data ?? []).reduce(
-      (sum, row) =>
-        sum + (Number((row as { cuantas_mascotas?: number }).cuantas_mascotas) || 0),
-      0,
+    const row = Array.isArray(data) ? data[0] : data;
+    const personas = Number(
+      (row as { personas?: number | string } | null)?.personas ?? 0,
+    );
+    const mascotas = Number(
+      (row as { mascotas?: number | string } | null)?.mascotas ?? 0,
     );
 
     setCounts((prev) => {

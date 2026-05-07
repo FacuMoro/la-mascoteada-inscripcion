@@ -288,8 +288,8 @@ function App() {
           aria-hidden
         />
 
-        <main className="relative z-10 mx-auto max-w-7xl min-w-0 px-5 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] pt-[max(2.5rem,calc(env(safe-area-inset-top,0px)+1.25rem))] sm:px-8 sm:pt-14 lg:grid lg:min-h-[calc(100svh-8rem)] lg:grid-cols-[1fr_minmax(0,0.95fr)] lg:items-start lg:gap-12 lg:pb-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:pt-12">
-          <div className="max-w-2xl min-w-0 lg:pt-4">
+        <main className="relative z-10 mx-auto max-w-7xl min-w-0 px-5 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] pt-[max(2.5rem,calc(env(safe-area-inset-top,0px)+1.25rem))] sm:px-8 sm:pt-14 lg:grid lg:min-h-[calc(100svh-8rem)] lg:grid-cols-[1fr_minmax(0,0.95fr)] lg:items-start lg:gap-x-12 lg:pb-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:pt-12">
+          <div className="max-w-2xl min-w-0 lg:col-span-2 lg:pt-4">
             <p className="text-xs font-bold uppercase tracking-[0.28em] text-mascoteada-orange">
               Inscripción 2026
             </p>
@@ -305,39 +305,41 @@ function App() {
               Completá el formulario para participar de los premios y regalos. No es necesaria la
               inscripción para asistir al evento.
             </p>
+          </div>
 
-            <form
-              onSubmit={onSubmit}
-              className="mt-10 max-w-full rounded-[2rem] border border-black/8 bg-white/90 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] sm:p-8"
-            >
-              <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-                <label className={labelClass}>
-                  Nombre
-                  <input
-                    required
-                    name="nombre"
-                    autoComplete="given-name"
-                    value={form.nombre}
-                    onChange={(e) => update('nombre', e.target.value)}
-                    className={inputClass}
-                    placeholder="Nombre"
-                  />
-                </label>
-                <label className={labelClass}>
-                  Apellido
-                  <input
-                    required
-                    name="apellido"
-                    autoComplete="family-name"
-                    value={form.apellido}
-                    onChange={(e) => update('apellido', e.target.value)}
-                    className={inputClass}
-                    placeholder="Apellido"
-                  />
-                </label>
-              </div>
+          <form
+            onSubmit={onSubmit}
+            className="mt-10 max-w-full rounded-[2rem] border border-black/8 bg-white/90 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] sm:p-8 lg:col-span-2 lg:mt-10 lg:max-w-none lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-x-10 lg:gap-y-6 lg:p-8 xl:max-w-[52rem] xl:gap-x-12"
+          >
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:col-span-2">
+              <label className={labelClass}>
+                Nombre
+                <input
+                  required
+                  name="nombre"
+                  autoComplete="given-name"
+                  value={form.nombre}
+                  onChange={(e) => update('nombre', e.target.value)}
+                  className={inputClass}
+                  placeholder="Nombre"
+                />
+              </label>
+              <label className={labelClass}>
+                Apellido
+                <input
+                  required
+                  name="apellido"
+                  autoComplete="family-name"
+                  value={form.apellido}
+                  onChange={(e) => update('apellido', e.target.value)}
+                  className={inputClass}
+                  placeholder="Apellido"
+                />
+              </label>
+            </div>
 
-              <label className={`${labelClass} mt-4 block`}>
+            <div className="mt-4 min-w-0 space-y-4 lg:col-start-1 lg:row-start-2 lg:mt-0">
+              <label className={`${labelClass} block`}>
                 DNI
                 <input
                   required
@@ -351,7 +353,7 @@ function App() {
                 />
               </label>
 
-              <label className={`${labelClass} mt-4 block`}>
+              <label className={`${labelClass} block`}>
                 Mail
                 <input
                   required
@@ -365,7 +367,7 @@ function App() {
                 />
               </label>
 
-              <label className={`${labelClass} mt-4 block`}>
+              <label className={`${labelClass} block`}>
                 Teléfono
                 <input
                   required
@@ -379,7 +381,7 @@ function App() {
                 />
               </label>
 
-              <label className={`${labelClass} mt-4 block`}>
+              <label className={`${labelClass} block`}>
                 ¿Cuántas mascotas traés?
                 <input
                   required
@@ -395,7 +397,7 @@ function App() {
                 />
               </label>
 
-              <label className={`${labelClass} mt-4 block`}>
+              <label className={`${labelClass} block`}>
                 Nombres de las mascotas
                 <textarea
                   name="nombres_mascotas"
@@ -454,23 +456,21 @@ function App() {
                   <InvitanPyramid />
                 </div>
               </div>
-            </form>
-
-            <p className="mx-auto mt-10 max-w-xl text-center text-sm text-black/50 lg:text-left">
-              ¿Problemas con el formulario? Revisá la conexión o contactá a la organización del
-              evento.
-            </p>
-
-            <div className="mt-10 lg:hidden">
-              <InfoCardsGrid />
             </div>
+
+            <aside className="relative z-10 hidden min-w-0 lg:col-start-2 lg:row-start-2 lg:block lg:max-w-[min(100%,20rem)] lg:pl-2 lg:pt-1 xl:max-w-[22rem]">
+              <InfoCardsGrid />
+            </aside>
+          </form>
+
+          <p className="mx-auto mt-10 max-w-xl text-center text-sm text-black/50 lg:col-span-2 lg:mx-0 lg:text-left">
+            ¿Problemas con el formulario? Revisá la conexión o contactá a la organización del
+            evento.
+          </p>
+
+          <div className="mt-10 lg:col-span-2 lg:hidden">
+            <InfoCardsGrid />
           </div>
-
-          <aside className="relative z-10 hidden min-w-0 self-start lg:block">
-            <div className="lg:pl-2 lg:pt-[clamp(26rem,52vh,40rem)] xl:pt-[clamp(28rem,54vh,42rem)] 2xl:pt-[clamp(30rem,56vh,44rem)]">
-              <InfoCardsGrid />
-            </div>
-          </aside>
         </main>
       </div>
     </div>

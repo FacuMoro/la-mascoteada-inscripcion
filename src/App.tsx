@@ -85,21 +85,21 @@ const infoCards = [
 
 function InfoCardsGrid() {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-3 lg:max-w-md xl:max-w-lg">
+    <div className="grid grid-cols-2 gap-3.5 sm:gap-4 lg:max-w-lg xl:max-w-xl">
       {infoCards.map((card) => (
         <div
           key={card.title}
-          className="flex min-h-0 items-start gap-2.5 rounded-2xl bg-black px-3 py-3 text-left text-white sm:gap-4 sm:px-4 sm:py-4"
+          className="flex min-h-0 items-start gap-3 rounded-2xl bg-black px-3.5 py-3.5 text-left text-white sm:gap-3.5 sm:px-4 sm:py-4 lg:px-4 lg:py-4.5"
         >
           <span
-            className="mt-0.5 h-8 w-1 shrink-0 rounded-full bg-mascoteada-orange sm:h-10"
+            className="mt-0.5 h-9 w-1 shrink-0 rounded-full bg-mascoteada-orange sm:h-10 lg:h-11"
             aria-hidden
           />
           <div className="min-w-0">
-            <p className="text-sm font-semibold leading-snug sm:text-base">
+            <p className="text-base font-semibold leading-snug sm:text-[1.0625rem] lg:text-lg">
               {card.title}
             </p>
-            <p className="mt-1 text-xs leading-relaxed text-white/75 sm:text-sm">
+            <p className="mt-1.5 text-sm leading-relaxed text-white/75 sm:text-[0.9375rem] lg:text-base">
               {card.text}
             </p>
           </div>
@@ -328,7 +328,7 @@ function App() {
           </div>
 
           <div className="mt-10 min-w-0 lg:col-span-2 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-x-10 xl:gap-x-12">
-            <div className="max-w-full rounded-[2rem] border border-black/8 bg-white/90 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] sm:p-8 lg:p-8 xl:max-w-[52rem]">
+            <div className="w-full max-w-[28rem] justify-self-start rounded-[2rem] border border-black/8 bg-white/90 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] sm:max-w-[30rem] sm:p-8 lg:p-8">
               <form onSubmit={onSubmit} className="min-w-0 max-w-full">
                 <div className="grid min-w-0 gap-4 sm:grid-cols-2">
                   <label className={labelClass}>
@@ -491,7 +491,7 @@ function App() {
               </form>
             </div>
 
-            <aside className="relative z-10 hidden min-w-0 lg:block lg:max-w-[min(100%,20rem)] lg:pt-28 lg:pl-2 xl:max-w-[22rem]">
+            <aside className="relative z-10 hidden min-w-0 lg:block lg:max-w-[min(100%,24rem)] lg:pt-28 lg:pl-2 xl:max-w-[26rem]">
               <InfoCardsGrid />
             </aside>
           </div>

@@ -74,6 +74,30 @@ const infoCards = [
   { title: 'Evento 2026', text: 'La Mascoteada — un día para celebrar.' },
 ]
 
+function InfoCardsGrid() {
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:gap-3 lg:max-w-md xl:max-w-lg">
+      {infoCards.map((card) => (
+        <div
+          key={card.title}
+          className="flex min-h-0 items-start gap-2.5 rounded-2xl bg-black px-3 py-3 text-left text-white sm:gap-4 sm:px-4 sm:py-4"
+        >
+          <span
+            className="mt-0.5 h-8 w-1 shrink-0 rounded-full bg-mascoteada-orange sm:h-10"
+            aria-hidden
+          />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold leading-snug sm:text-base">{card.title}</p>
+            <p className="mt-1 text-xs leading-relaxed text-white/75 sm:text-sm">
+              {card.text}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function App() {
   const [form, setForm] = useState<FormState>(initialForm)
   const [submitting, setSubmitting] = useState(false)
@@ -436,32 +460,19 @@ function App() {
               ¿Problemas con el formulario? Revisá la conexión o contactá a la organización del
               evento.
             </p>
+
+            <div className="mt-10 lg:hidden">
+              <InfoCardsGrid />
+            </div>
           </div>
 
-          {/* Columna derecha: reserva espacio al blob en desktop */}
-          <div className="hidden min-h-[280px] lg:block" aria-hidden />
+          <aside className="relative z-10 hidden min-w-0 self-start lg:block">
+            <div className="lg:pl-2 lg:pt-[clamp(11rem,30vh,21rem)] xl:pt-[clamp(12rem,32vh,23rem)]">
+              <InfoCardsGrid />
+            </div>
+          </aside>
         </main>
       </div>
-
-      <section className="border-t border-black/5 bg-white px-5 pb-[calc(2.5rem+env(safe-area-inset-bottom,0px))] pt-10 sm:px-8">
-        <div className="mx-auto grid min-w-0 max-w-7xl gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {infoCards.map((card) => (
-            <div
-              key={card.title}
-              className="flex items-start gap-4 rounded-2xl bg-black px-5 py-4 text-left text-white"
-            >
-              <span
-                className="mt-0.5 h-10 w-1 shrink-0 rounded-full bg-mascoteada-orange"
-                aria-hidden
-              />
-              <div>
-                <p className="font-semibold leading-snug">{card.title}</p>
-                <p className="mt-1 text-sm leading-relaxed text-white/75">{card.text}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
     </div>
   )
 }

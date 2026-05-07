@@ -14,6 +14,145 @@ type Counts = {
 
 const LOGO_PRINCIPAL_SRC = encodeURI("/Logo Mascoteada.png");
 const POLL_MS = 8000;
+const SOUND_PREF_KEY = "mascoteada-stats-sound";
+
+/** Hook que sintetiza un campanazo alegre de 4 notas en cliente. Maneja el unlock
+ *  por gesto que exigen Chrome/Safari y persiste la preferencia ON/OFF. */
+function useCelebrationSound() {
+  const ctxRef = useRef<AudioContext | null>(null);
+  const [enabled, setEnabledState] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    const stored = window.localStorage.getItem(SOUND_PREF_KEY);
+    return stored === null ? true : stored === "1";
+  });
+  const [unlocked, setUnlocked] = useState(false);
+
+  const setEnabled = useCallback((value: boolean) => {
+    setEnabledState(value);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(SOUND_PREF_KEY, value ? "1" : "0");
+    }
+  }, []);
+
+  const ensureCtx = useCallback((): AudioContext | null => {
+    if (typeof window === "undefined") return null;
+    if (!ctxRef.current) {
+      const Ctx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext })
+          .webkitAudioContext;
+      if (!Ctx) return null;
+      try {
+        ctxRef.current = new Ctx();
+      } catch {
+        return null;
+      }
+    }
+    const ctx = ctxRef.current;
+    if (ctx.state === "suspended") {
+      void ctx.resume();
+    }
+    return ctx;
+  }, []);
+
+  // Cualquier gesto del usuario desbloquea el AudioContext (requerido por iOS/Chrome).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onGesture = () => {
+      const ctx = ensureCtx();
+      if (ctx && ctx.state === "running") {
+        setUnlocked(true);
+      }
+    };
+    window.addEventListener("pointerdown", onGesture);
+    window.addEventListener("keydown", onGesture);
+    return () => {
+      window.removeEventListener("pointerdown", onGesture);
+      window.removeEventListener("keydown", onGesture);
+    };
+  }, [ensureCtx]);
+
+  const play = useCallback(() => {
+    if (!enabled) return;
+    const ctx = ensureCtx();
+    if (!ctx || ctx.state !== "running") return;
+
+    const now = ctx.currentTime;
+    // Acorde de Do mayor ascendente + octava final, estilo "tin-tin-tin-tin!".
+    const notes: Array<{ freq: number; time: number; dur: number; gain: number }> = [
+      { freq: 523.25, time: 0.0, dur: 0.22, gain: 0.18 }, // C5
+      { freq: 659.25, time: 0.08, dur: 0.22, gain: 0.18 }, // E5
+      { freq: 783.99, time: 0.16, dur: 0.24, gain: 0.18 }, // G5
+      { freq: 1046.5, time: 0.24, dur: 0.42, gain: 0.22 }, // C6
+    ];
+
+    const master = ctx.createGain();
+    master.gain.value = 0.85;
+    master.connect(ctx.destination);
+
+    notes.forEach(({ freq, time, dur, gain }) => {
+      // Tono principal (triangular, suena dulce) + un armónico al octavar para "brillo".
+      const osc = ctx.createOscillator();
+      const shimmer = ctx.createOscillator();
+      const env = ctx.createGain();
+      osc.type = "triangle";
+      shimmer.type = "sine";
+      osc.frequency.value = freq;
+      shimmer.frequency.value = freq * 2;
+
+      env.gain.setValueAtTime(0, now + time);
+      env.gain.linearRampToValueAtTime(gain, now + time + 0.012);
+      env.gain.exponentialRampToValueAtTime(0.0008, now + time + dur);
+
+      const shimmerGain = ctx.createGain();
+      shimmerGain.gain.value = 0.35;
+      shimmer.connect(shimmerGain).connect(env);
+
+      osc.connect(env).connect(master);
+
+      osc.start(now + time);
+      shimmer.start(now + time);
+      osc.stop(now + time + dur + 0.05);
+      shimmer.stop(now + time + dur + 0.05);
+    });
+  }, [enabled, ensureCtx]);
+
+  return { play, enabled, setEnabled, unlocked };
+}
+
+function SpeakerIcon({ on }: { on: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
+      <path
+        d="M4 9.5v5h3.5L12 18V6L7.5 9.5H4Z"
+        fill="currentColor"
+      />
+      {on ? (
+        <>
+          <path
+            d="M15.5 8.5a4 4 0 0 1 0 7"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+          <path
+            d="M18 6a7 7 0 0 1 0 12"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+        </>
+      ) : (
+        <path
+          d="M16 9.5l5 5m0-5l-5 5"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+      )}
+    </svg>
+  );
+}
 
 /** Cuenta progresiva con easing easeOutCubic. */
 function useCountUp(target: number, duration = 1100): number {
@@ -211,6 +350,8 @@ export default function StatsPage() {
     mascotas: 0,
   });
   const previousCountsRef = useRef<Counts>({ personas: 0, mascotas: 0 });
+  const soundBaselineRef = useRef<Counts | null>(null);
+  const sound = useCelebrationSound();
 
   const fetchCounts = useCallback(async (silent = false) => {
     if (!supabase) {
@@ -294,6 +435,21 @@ export default function StatsPage() {
     return () => clearInterval(t);
   }, []);
 
+  // Sonido de festejo cuando entra un registro nuevo (cualquiera de los dos sube).
+  // El primer fetch fija una baseline y NO suena, para evitar el ruido al cargar la pagina.
+  useEffect(() => {
+    if (loading) return;
+    if (soundBaselineRef.current === null) {
+      soundBaselineRef.current = counts;
+      return;
+    }
+    const prev = soundBaselineRef.current;
+    if (counts.personas > prev.personas || counts.mascotas > prev.mascotas) {
+      sound.play();
+    }
+    soundBaselineRef.current = counts;
+  }, [counts, loading, sound]);
+
   const personasDisplay = useCountUp(counts.personas);
   const mascotasDisplay = useCountUp(counts.mascotas);
 
@@ -356,6 +512,34 @@ export default function StatsPage() {
               </span>
               {lastUpdateLabel ? `Actualizado ${lastUpdateLabel}` : "Conectando…"}
             </span>
+            <button
+              type="button"
+              onClick={() => {
+                const next = !sound.enabled;
+                sound.setEnabled(next);
+                if (next) sound.play();
+              }}
+              aria-pressed={sound.enabled}
+              title={
+                sound.enabled
+                  ? sound.unlocked
+                    ? "Silenciar festejos"
+                    : "Tocá la pantalla para activar el sonido"
+                  : "Activar festejos"
+              }
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold ring-1 transition ${
+                sound.enabled
+                  ? "bg-mascoteada-orange/15 text-mascoteada-orange ring-mascoteada-orange/30 hover:bg-mascoteada-orange/25"
+                  : "bg-white/5 text-white/55 ring-white/10 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              <SpeakerIcon on={sound.enabled} />
+              {sound.enabled
+                ? sound.unlocked
+                  ? "Sonido"
+                  : "Tocá para activar"
+                : "Silencio"}
+            </button>
             <button
               type="button"
               onClick={() => fetchCounts(false)}

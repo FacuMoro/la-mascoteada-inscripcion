@@ -18,6 +18,22 @@ type FormState = {
   nombres_mascotas: string
 }
 
+/** PostgREST a veces pone el texto en `details`; el code no siempre llega como 23505 en el cliente. */
+function isDniUniqueViolation(error: {
+  code?: string
+  message?: string
+  details?: string
+  hint?: string
+}): boolean {
+  if (String(error.code) === '23505') return true
+  const blob = [error.message, error.details, error.hint].filter(Boolean).join(' ').toLowerCase()
+  return (
+    blob.includes('duplicate key') ||
+    blob.includes('unique constraint') ||
+    blob.includes('usuarios_mascoteada_dni')
+  )
+}
+
 const initialForm: FormState = {
   nombre: '',
   apellido: '',
@@ -120,14 +136,11 @@ function App() {
     setSubmitting(false)
 
     if (error) {
-      const isDupDni =
-        error.code === '23505' ||
-        /duplicate key|unique constraint|already exists/i.test(error.message ?? '')
+      const msgUsuario =
+        'Este DNI ya está inscripto. Si necesitás actualizar tus datos, contactá a la organización del evento.'
       setFeedback({
         kind: 'error',
-        message: isDupDni
-          ? 'Este DNI ya está inscripto. Si necesitás actualizar tus datos, contactá a la organización del evento.'
-          : error.message || 'No se pudo guardar la inscripción.',
+        message: isDniUniqueViolation(error) ? msgUsuario : (error.message || 'No se pudo guardar la inscripción.'),
       })
       return
     }

@@ -225,7 +225,9 @@ function App() {
     const listLayout = single
       ? "flex justify-center"
       : centered
-        ? "flex flex-wrap justify-center gap-3 sm:gap-5"
+        ? uniformCentered && files.length === 2
+          ? "flex flex-wrap justify-center gap-3 sm:flex-nowrap sm:gap-5"
+          : "flex flex-wrap justify-center gap-3 sm:gap-5"
         : "grid grid-cols-2 gap-3 sm:grid-cols-3";
     return (
       <ul
@@ -268,7 +270,7 @@ function App() {
 
     return (
       <div className="mt-5 flex flex-col items-center gap-3 sm:gap-4">
-        <div className="flex w-full flex-wrap justify-center gap-3 sm:gap-5">
+        <div className="flex w-full flex-wrap justify-center gap-3 sm:flex-nowrap sm:gap-5">
           {INVITAN_ROW_TOP.map((file) => (
             <div key={file} className={tileTop}>
               <img
@@ -280,7 +282,7 @@ function App() {
             </div>
           ))}
         </div>
-        <div className="flex w-full flex-wrap justify-center gap-2 sm:gap-3">
+        <div className="flex w-full flex-wrap justify-center gap-2 sm:flex-nowrap sm:gap-3">
           {INVITAN_ROW_BOTTOM.map((file) => (
             <div key={file} className={tileBottom}>
               <img
@@ -328,7 +330,7 @@ function App() {
           </div>
 
           <div className="mt-10 min-w-0 lg:col-span-2 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-x-10 xl:gap-x-12">
-            <div className="w-full max-w-[28rem] justify-self-start rounded-[2rem] border border-black/8 bg-white/90 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] sm:max-w-[30rem] sm:p-8 lg:p-8">
+            <div className="w-full max-w-2xl justify-self-start rounded-[2rem] border border-black/8 bg-white/90 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] sm:p-8 lg:p-8 xl:max-w-[48rem]">
               <form onSubmit={onSubmit} className="min-w-0 max-w-full">
                 <div className="grid min-w-0 gap-4 sm:grid-cols-2">
                   <label className={labelClass}>

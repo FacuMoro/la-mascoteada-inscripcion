@@ -137,7 +137,7 @@ function App() {
 
     if (error) {
       const msgUsuario =
-        'Este DNI ya está inscripto. Si necesitás actualizar tus datos, contactá a la organización del evento.'
+        'Este DNI ya está registrado. Te esperamos en el evento!'
       setFeedback({
         kind: 'error',
         message: isDniUniqueViolation(error) ? msgUsuario : (error.message || 'No se pudo guardar la inscripción.'),

@@ -12,6 +12,29 @@ type Counts = {
   mascotas: number;
 };
 
+type GenderCounts = {
+  hombres: number;
+  mujeres: number;
+  sinClasificar: number;
+};
+
+type AgePyramidRow = {
+  ageRange: string;
+  sortOrder: number;
+  hombres: number;
+  mujeres: number;
+  sinClasificar: number;
+};
+
+const GENDER_COLORS = {
+  mujeres: "#ff7eb6",
+  hombres: "#6ec1ff",
+} as const;
+
+// Solo estos rangos se grafican en la piramide. "Sin DNI" se omite del visual
+// porque ensucia la lectura, pero se sigue calculando en backend.
+const VISIBLE_AGE_RANGES = ["< 18", "18-29", "30-49", "50+"] as const;
+
 const LOGO_PRINCIPAL_SRC = encodeURI("/Logo Mascoteada.png");
 const POLL_MS = 8000;
 const SOUND_PREF_KEY = "mascoteada-stats-sound";
@@ -340,6 +363,12 @@ function RefreshIcon({ spinning }: { spinning: boolean }) {
 
 export default function StatsPage() {
   const [counts, setCounts] = useState<Counts>({ personas: 0, mascotas: 0 });
+  const [genderCounts, setGenderCounts] = useState<GenderCounts>({
+    hombres: 0,
+    mujeres: 0,
+    sinClasificar: 0,
+  });
+  const [agePyramid, setAgePyramid] = useState<AgePyramidRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -363,18 +392,22 @@ export default function StatsPage() {
     }
     if (!silent) setRefreshing(true);
 
-    // Usamos un RPC con SECURITY DEFINER que devuelve solo los conteos agregados,
-    // sin exponer datos personales. Evita necesidad de policy de SELECT en la tabla.
-    const { data, error: err } = await supabase.rpc("get_mascoteada_stats");
+    // RPCs con SECURITY DEFINER que devuelven solo agregados, sin exponer datos
+    // personales. La piramide etaria suma DNI -> anio de nacimiento aproximado.
+    const [statsRes, genderRes, pyramidRes] = await Promise.all([
+      supabase.rpc("get_mascoteada_stats"),
+      supabase.rpc("get_mascoteada_gender_stats"),
+      supabase.rpc("get_mascoteada_age_pyramid"),
+    ]);
 
-    if (err) {
-      setError(err.message);
+    if (statsRes.error) {
+      setError(statsRes.error.message);
       setLoading(false);
       setRefreshing(false);
       return;
     }
 
-    const row = Array.isArray(data) ? data[0] : data;
+    const row = Array.isArray(statsRes.data) ? statsRes.data[0] : statsRes.data;
     const personas = Number(
       (row as { personas?: number | string } | null)?.personas ?? 0,
     );
@@ -393,6 +426,31 @@ export default function StatsPage() {
       previousCountsRef.current = next;
       return next;
     });
+
+    // genderRes / pyramidRes pueden fallar si la RPC todavia no se desplego; los tratamos como no-fatal.
+    if (!genderRes.error) {
+      const gRow = Array.isArray(genderRes.data) ? genderRes.data[0] : genderRes.data;
+      setGenderCounts({
+        hombres: Number((gRow as { hombres?: number | string } | null)?.hombres ?? 0),
+        mujeres: Number((gRow as { mujeres?: number | string } | null)?.mujeres ?? 0),
+        sinClasificar: Number(
+          (gRow as { sin_clasificar?: number | string } | null)?.sin_clasificar ?? 0,
+        ),
+      });
+    }
+
+    if (!pyramidRes.error && Array.isArray(pyramidRes.data)) {
+      const rows = (pyramidRes.data as Array<Record<string, number | string>>).map(
+        (r) => ({
+          ageRange: String(r.age_range ?? ""),
+          sortOrder: Number(r.sort_order ?? 0),
+          hombres: Number(r.hombres ?? 0),
+          mujeres: Number(r.mujeres ?? 0),
+          sinClasificar: Number(r.sin_clasificar ?? 0),
+        }),
+      );
+      setAgePyramid(rows);
+    }
 
     setError(null);
     setLastUpdate(new Date());
@@ -452,11 +510,6 @@ export default function StatsPage() {
 
   const personasDisplay = useCountUp(counts.personas);
   const mascotasDisplay = useCountUp(counts.mascotas);
-
-  const ratio = useMemo(() => {
-    if (counts.personas === 0) return 0;
-    return counts.mascotas / counts.personas;
-  }, [counts]);
 
   const lastUpdateLabel = lastUpdate
     ? relativeTime(now - lastUpdate.getTime())
@@ -581,16 +634,8 @@ export default function StatsPage() {
 
           {/* Métricas secundarias */}
           <div className="mt-6 grid gap-4 sm:grid-cols-3 md:mt-8">
-            <MetricTile
-              label="Mascotas por persona"
-              value={counts.personas === 0 ? "—" : ratio.toFixed(2)}
-              hint="Promedio"
-            />
-            <MetricTile
-              label="Total individuos"
-              value={formatNumber(counts.personas + counts.mascotas)}
-              hint="Personas + mascotas"
-            />
+            <GenderDonutTile counts={genderCounts} />
+            <AgePyramidTile rows={agePyramid} />
             <MetricTile
               label="Modo de actualización"
               value="Auto"
@@ -603,6 +648,222 @@ export default function StatsPage() {
           <span>Datos en vivo desde Supabase · Tabla usuarios_mascoteada</span>
           <span>{new Date().getFullYear()} · La Mascoteada</span>
         </footer>
+      </div>
+    </div>
+  );
+}
+
+function GenderDonutTile({ counts }: { counts: GenderCounts }) {
+  // Redistribuimos los "sin clasificar" en proporcion a hombres/mujeres simplemente
+  // ignorandolos en el denominador: el % final ya queda repartido proporcionalmente.
+  const { mujeresPct, hombresPct, totalClasificado } = useMemo(() => {
+    const total = counts.hombres + counts.mujeres;
+    if (total === 0) {
+      return { mujeresPct: 0, hombresPct: 0, totalClasificado: 0 };
+    }
+    return {
+      mujeresPct: (counts.mujeres / total) * 100,
+      hombresPct: (counts.hombres / total) * 100,
+      totalClasificado: total,
+    };
+  }, [counts]);
+
+  const radius = 38;
+  const circumference = 2 * Math.PI * radius;
+  const mujeresLen = (mujeresPct / 100) * circumference;
+  const hombresLen = (hombresPct / 100) * circumference;
+  const hasData = totalClasificado > 0;
+
+  return (
+    <div className="rounded-2xl bg-white/[0.03] p-5 ring-1 ring-white/10 backdrop-blur-md">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50">
+        Distribución por género
+      </p>
+
+      <div className="mt-3 flex items-center gap-4">
+        <div className="relative shrink-0">
+          <svg viewBox="0 0 100 100" className="h-24 w-24 -rotate-90">
+            <circle
+              cx="50"
+              cy="50"
+              r={radius}
+              fill="none"
+              stroke="rgba(255,255,255,0.08)"
+              strokeWidth="14"
+            />
+            {hasData ? (
+              <>
+                <circle
+                  cx="50"
+                  cy="50"
+                  r={radius}
+                  fill="none"
+                  stroke={GENDER_COLORS.mujeres}
+                  strokeWidth="14"
+                  strokeDasharray={`${mujeresLen} ${circumference}`}
+                  strokeDashoffset="0"
+                  style={{ transition: "stroke-dasharray 600ms ease" }}
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r={radius}
+                  fill="none"
+                  stroke={GENDER_COLORS.hombres}
+                  strokeWidth="14"
+                  strokeDasharray={`${hombresLen} ${circumference}`}
+                  strokeDashoffset={`${-mujeresLen}`}
+                  style={{ transition: "stroke-dasharray 600ms ease, stroke-dashoffset 600ms ease" }}
+                />
+              </>
+            ) : null}
+          </svg>
+        </div>
+
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <LegendRow
+            color={GENDER_COLORS.mujeres}
+            label="Mujeres"
+            pct={mujeresPct}
+            disabled={!hasData}
+          />
+          <LegendRow
+            color={GENDER_COLORS.hombres}
+            label="Hombres"
+            pct={hombresPct}
+            disabled={!hasData}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LegendRow({
+  color,
+  label,
+  pct,
+  disabled,
+}: {
+  color: string;
+  label: string;
+  pct: number;
+  disabled: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 text-sm text-white/85">
+      <div className="flex items-center gap-2 min-w-0">
+        <span
+          className="h-2.5 w-2.5 shrink-0 rounded-full"
+          style={{ background: color }}
+          aria-hidden
+        />
+        <span className="truncate">{label}</span>
+      </div>
+      <span className="font-bold tabular-nums">
+        {disabled ? "—" : `${pct.toFixed(1)}%`}
+      </span>
+    </div>
+  );
+}
+
+function AgePyramidTile({ rows }: { rows: AgePyramidRow[] }) {
+  // Solo mostramos los rangos visibles, en orden invertido (mayor arriba, menor abajo).
+  // En cada fila redistribuimos los "sin clasificar" del rango sobre M/F en proporcion
+  // para que las barras reflejen el 100% de los inscriptos clasificables.
+  const visible = useMemo(() => {
+    const byRange = new Map(rows.map((r) => [r.ageRange, r]));
+    return VISIBLE_AGE_RANGES.map((label) => {
+      const r = byRange.get(label);
+      if (!r) {
+        return { label, hombres: 0, mujeres: 0 };
+      }
+      const cls = r.hombres + r.mujeres;
+      if (cls === 0) {
+        return { label, hombres: 0, mujeres: 0 };
+      }
+      const hombres = r.hombres + r.sinClasificar * (r.hombres / cls);
+      const mujeres = r.mujeres + r.sinClasificar * (r.mujeres / cls);
+      return { label, hombres, mujeres };
+    })
+      .slice()
+      .reverse();
+  }, [rows]);
+
+  const max = useMemo(() => {
+    let m = 0;
+    for (const v of visible) {
+      if (v.hombres > m) m = v.hombres;
+      if (v.mujeres > m) m = v.mujeres;
+    }
+    return m;
+  }, [visible]);
+
+  const hasData = max > 0;
+
+  return (
+    <div className="rounded-2xl bg-white/[0.03] p-5 ring-1 ring-white/10 backdrop-blur-md">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50">
+        Pirámide etaria
+      </p>
+
+      <div className="mt-3 grid grid-cols-[1fr_42px_1fr] items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.18em]">
+        <span className="text-right" style={{ color: GENDER_COLORS.hombres }}>
+          Hombres
+        </span>
+        <span aria-hidden />
+        <span style={{ color: GENDER_COLORS.mujeres }}>Mujeres</span>
+      </div>
+
+      <div className="mt-2 space-y-2">
+        {visible.map((row) => (
+          <PyramidRow key={row.label} row={row} max={max} hasData={hasData} />
+        ))}
+      </div>
+
+      <p className="mt-3 text-[10px] text-white/40">
+        Edad estimada por DNI · sin clasificar repartidos
+      </p>
+    </div>
+  );
+}
+
+function PyramidRow({
+  row,
+  max,
+  hasData,
+}: {
+  row: { label: string; hombres: number; mujeres: number };
+  max: number;
+  hasData: boolean;
+}) {
+  const ratioH = hasData ? row.hombres / max : 0;
+  const ratioM = hasData ? row.mujeres / max : 0;
+
+  return (
+    <div className="grid grid-cols-[1fr_42px_1fr] items-center gap-1">
+      <div className="flex items-center justify-end">
+        <div
+          className="h-3 rounded-l-full"
+          style={{
+            width: `${ratioH * 100}%`,
+            background: GENDER_COLORS.hombres,
+            transition: "width 700ms cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
+        />
+      </div>
+      <div className="text-center text-[11px] font-semibold tabular-nums text-white/70">
+        {row.label}
+      </div>
+      <div className="flex items-center justify-start">
+        <div
+          className="h-3 rounded-r-full"
+          style={{
+            width: `${ratioM * 100}%`,
+            background: GENDER_COLORS.mujeres,
+            transition: "width 700ms cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
+        />
       </div>
     </div>
   );

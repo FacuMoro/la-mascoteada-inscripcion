@@ -7,6 +7,7 @@ import {
 } from "react";
 import { supabase } from "./lib/supabase";
 import StatsPage from "./pages/StatsPage";
+import BackgroundMusic from "./BackgroundMusic";
 import {
   AUSPICIAN_LOGO_FILES,
   INVITAN_ROW_BOTTOM,
@@ -390,10 +391,12 @@ function CelebrationOverlay({ onClose }: { onClose: () => void }) {
 
 function App() {
   const route = useRoute();
-  if (route === "stats") {
-    return <StatsPage />;
-  }
-  return <RegisterApp />;
+  return (
+    <>
+      <BackgroundMusic />
+      {route === "stats" ? <StatsPage /> : <RegisterApp />}
+    </>
+  );
 }
 
 function RegisterApp() {

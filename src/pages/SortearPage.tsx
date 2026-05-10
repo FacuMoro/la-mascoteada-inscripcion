@@ -45,18 +45,6 @@ type PremioConfig = {
 
 const PREMIOS: readonly PremioConfig[] = [
   {
-    id: "bravecto-materas",
-    nombre: "2 Materas Bravecto",
-    cantidad: 2,
-    sponsorLogo: "Logo Animal.png",
-  },
-  {
-    id: "materojo-kit",
-    nombre: "Kit de Mate · Mate Rojo",
-    cantidad: 2,
-    sponsorLogo: "Logo Mate Rojo.png",
-  },
-  {
     id: "serin-cupones-50",
     nombre: "100 Cupones 50% OFF · Pinturerías Serin",
     cantidad: 100,

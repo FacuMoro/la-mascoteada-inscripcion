@@ -1355,6 +1355,9 @@ function RevelacionOverlay({
   // Modo "denso": cuando hay muchos ganadores, comprimimos header y cards para
   // que entren más nombres en pantalla con menos scroll (caso 100 cupones).
   const denso = ganadores.length > 30;
+  // Modo "uno": cuando hay un solo ganador (TV/Moto), achicamos el logo y
+  // subimos al ganador para que quede en pantalla sin necesidad de scroll.
+  const uno = ganadores.length === 1;
 
   return (
     <div
@@ -1374,15 +1377,23 @@ function RevelacionOverlay({
       />
 
       <header
-        className={`relative z-10 px-6 sm:px-12 ${denso ? "pt-5 sm:pt-6" : "pt-8 sm:pt-10"}`}
+        className={`relative z-10 px-6 sm:px-12 ${
+          denso ? "pt-5 sm:pt-6" : uno ? "pt-4 sm:pt-5" : "pt-8 sm:pt-10"
+        }`}
       >
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-3 text-center sm:gap-4">
+        <div
+          className={`mx-auto flex w-full max-w-6xl flex-col items-center text-center ${
+            uno ? "gap-2 sm:gap-3" : "gap-3 sm:gap-4"
+          }`}
+        >
           {premio.sponsorLogo ? (
             <div
               className={`flex w-auto items-center justify-center rounded-3xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.4)] ring-1 ring-white/10 ${
                 denso
                   ? "h-32 px-8 py-5 sm:h-40 sm:px-12 sm:py-6"
-                  : "h-64 px-12 py-8 sm:h-80 sm:px-20 sm:py-10"
+                  : uno
+                    ? "h-32 px-8 py-5 sm:h-40 sm:px-12 sm:py-6"
+                    : "h-64 px-12 py-8 sm:h-80 sm:px-20 sm:py-10"
               }`}
             >
               <img
@@ -1404,15 +1415,19 @@ function RevelacionOverlay({
           >
             {premio.nombre}
           </h2>
-          <p className="text-base text-white/55 sm:text-lg">
-            {formatNumber(ganadores.length)}{" "}
-            {pluralizar(ganadores.length, "ganador", "ganadores")}
-          </p>
+          {!uno ? (
+            <p className="text-base text-white/55 sm:text-lg">
+              {formatNumber(ganadores.length)}{" "}
+              {pluralizar(ganadores.length, "ganador", "ganadores")}
+            </p>
+          ) : null}
         </div>
       </header>
 
       <div
-        className={`relative z-10 flex-1 overflow-y-auto px-6 pb-32 sm:px-12 ${denso ? "pt-4" : "pt-8"}`}
+        className={`relative z-10 flex-1 overflow-y-auto px-6 pb-32 sm:px-12 ${
+          denso ? "pt-4" : uno ? "flex items-center justify-center pt-4" : "pt-8"
+        }`}
       >
         <ul
           className={`mx-auto flex w-full flex-wrap justify-center ${
@@ -1420,8 +1435,9 @@ function RevelacionOverlay({
           }`}
         >
           {ganadores.map((g, idx) => {
-            const basisClase =
-              ganadores.length <= 3
+            const basisClase = uno
+              ? "w-full max-w-3xl"
+              : ganadores.length <= 3
                 ? "w-full max-w-sm sm:basis-[calc(33.333%-0.5rem)]"
                 : ganadores.length <= 12
                   ? "basis-[calc(50%-0.375rem)] sm:basis-[calc(33.333%-0.5rem)] md:basis-[calc(25%-0.5625rem)]"
@@ -1431,8 +1447,12 @@ function RevelacionOverlay({
             return (
               <li
                 key={g.usuario_id}
-                className={`flex flex-col items-center rounded-xl border border-white/10 bg-white/[0.06] text-center backdrop-blur ${
-                  denso ? "px-2 py-2" : "rounded-2xl px-4 py-3"
+                className={`flex flex-col items-center rounded-xl border text-center backdrop-blur ${
+                  uno
+                    ? "rounded-3xl border-mascoteada-orange/40 bg-mascoteada-orange/10 px-8 py-8 shadow-[0_30px_80px_rgba(254,134,39,0.25)] sm:px-12 sm:py-10"
+                    : denso
+                      ? "border-white/10 bg-white/[0.06] px-2 py-2"
+                      : "rounded-2xl border-white/10 bg-white/[0.06] px-4 py-3"
                 } ${basisClase} ${modoRevista ? "" : "winner-drop"}`}
                 style={
                   modoRevista
@@ -1444,20 +1464,30 @@ function RevelacionOverlay({
               >
                 <span
                   className={`font-semibold uppercase tracking-[0.22em] text-mascoteada-orange ${
-                    denso ? "text-[9px]" : "text-[10px]"
+                    uno ? "text-xs sm:text-sm" : denso ? "text-[9px]" : "text-[10px]"
                   }`}
                 >
                   #{g.posicion}
                 </span>
                 <p
-                  className={`mt-0.5 font-bold leading-tight ${
-                    denso ? "text-xs sm:text-sm" : "mt-1 text-base sm:text-lg"
+                  className={`font-bold leading-tight ${
+                    uno
+                      ? "mt-2 text-3xl sm:text-5xl md:text-6xl"
+                      : denso
+                        ? "mt-0.5 text-xs sm:text-sm"
+                        : "mt-1 text-base sm:text-lg"
                   }`}
                 >
                   {g.nombre} {g.apellido}
                 </p>
                 {!denso && g.nombres_mascotas ? (
-                  <p className="mt-0.5 truncate text-xs text-white/55">
+                  <p
+                    className={`text-white/55 ${
+                      uno
+                        ? "mt-3 text-base sm:text-xl"
+                        : "mt-0.5 truncate text-xs"
+                    }`}
+                  >
                     con {g.nombres_mascotas}
                   </p>
                 ) : null}

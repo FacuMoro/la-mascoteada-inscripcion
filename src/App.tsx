@@ -7,6 +7,7 @@ import {
 } from "react";
 import { supabase } from "./lib/supabase";
 import StatsPage from "./pages/StatsPage";
+import SortearPage from "./pages/SortearPage";
 import BackgroundMusic from "./BackgroundMusic";
 import {
   AUSPICIAN_LOGO_FILES,
@@ -23,19 +24,29 @@ const STATS_PATHS = new Set<string>([
   "/dashboard",
 ]);
 
-function getRouteKey(): "stats" | "form" {
+const SORTEO_PATHS = new Set<string>([
+  "/sorteo",
+  "/sorteos",
+  "/sortear",
+  "/raffle",
+]);
+
+type Route = "stats" | "sorteo" | "form";
+
+function getRouteKey(): Route {
   if (typeof window === "undefined") return "form";
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
   if (STATS_PATHS.has(path)) return "stats";
+  if (SORTEO_PATHS.has(path)) return "sorteo";
   const hash = window.location.hash.replace(/^#/, "").replace(/\/+$/, "");
-  if (hash && STATS_PATHS.has(hash.startsWith("/") ? hash : `/${hash}`)) {
-    return "stats";
-  }
+  const hashKey = hash.startsWith("/") ? hash : `/${hash}`;
+  if (hash && STATS_PATHS.has(hashKey)) return "stats";
+  if (hash && SORTEO_PATHS.has(hashKey)) return "sorteo";
   return "form";
 }
 
-function useRoute(): "stats" | "form" {
-  const [route, setRoute] = useState<"stats" | "form">(() => getRouteKey());
+function useRoute(): Route {
+  const [route, setRoute] = useState<Route>(() => getRouteKey());
   useEffect(() => {
     const onChange = () => setRoute(getRouteKey());
     window.addEventListener("popstate", onChange);
@@ -394,7 +405,13 @@ function App() {
   return (
     <>
       <BackgroundMusic />
-      {route === "stats" ? <StatsPage /> : <RegisterApp />}
+      {route === "stats" ? (
+        <StatsPage />
+      ) : route === "sorteo" ? (
+        <SortearPage />
+      ) : (
+        <RegisterApp />
+      )}
     </>
   );
 }

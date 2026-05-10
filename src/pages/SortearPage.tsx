@@ -38,6 +38,9 @@ type PremioConfig = {
   requiereConfirmacion?: boolean;
   /** Mensaje principal del overlay de confirmación. */
   textoConfirmacion?: string;
+  /** Si true, en la pantalla de revelación habilita un botón
+   *  "Re-sortear · ganador ausente" (caso TV / Moto). */
+  requierePresencia?: boolean;
 };
 
 const PREMIOS: readonly PremioConfig[] = [
@@ -64,6 +67,7 @@ const PREMIOS: readonly PremioConfig[] = [
     nombre: 'TV LED 43" Noblex',
     cantidad: 1,
     sponsorLogo: "Logo Animal.png",
+    requierePresencia: true,
   },
   {
     id: "moto-mondial",
@@ -76,6 +80,7 @@ const PREMIOS: readonly PremioConfig[] = [
     detalle: "El gran sorteo final",
     requiereConfirmacion: true,
     textoConfirmacion: "¿Todos listos para el gran premio?",
+    requierePresencia: true,
   },
 ];
 
@@ -114,8 +119,19 @@ type ModalState =
   | { kind: "idle" }
   | { kind: "confirmando"; premio: PremioConfig }
   | { kind: "sorteando"; premio: PremioConfig; startedAt: number }
+  | {
+      kind: "resorteando";
+      premio: PremioConfig;
+      ganadorAnterior: Ganador;
+      startedAt: number;
+    }
   | { kind: "revelando"; premio: PremioConfig; ganadores: Ganador[] }
   | { kind: "ver-ganadores"; premio: PremioConfig; ganadores: Ganador[] }
+  | {
+      kind: "confirmando-resorteo";
+      premio: PremioConfig;
+      ganadorAnterior: Ganador;
+    }
   | { kind: "error"; message: string };
 
 /* ===========================================================================
@@ -592,6 +608,58 @@ function SortearAutenticado({
     }
   }
 
+  async function resortearNoPresente(
+    premio: PremioConfig,
+    ganadorAnterior: Ganador,
+  ) {
+    if (!supabase) return;
+    setModal({
+      kind: "resorteando",
+      premio,
+      ganadorAnterior,
+      startedAt: Date.now(),
+    });
+
+    const startedAt = Date.now();
+    try {
+      const { data, error } = await supabase.rpc(
+        "resortear_premio_no_presente",
+        {
+          p_password: password,
+          p_premio_id: premio.id,
+          p_usuario_id_descartado: ganadorAnterior.usuario_id,
+          p_motivo: "no_presente",
+        },
+      );
+
+      if (error) {
+        setModal({ kind: "error", message: error.message });
+        return;
+      }
+
+      const nuevos = (data ?? []) as Ganador[];
+      if (nuevos.length === 0) {
+        setModal({
+          kind: "error",
+          message:
+            "No quedan participantes elegibles para reemplazar al ganador.",
+        });
+        return;
+      }
+
+      const targetMs = premio.duracionAnimacionMs ?? ANIMATION_MIN_MS;
+      const elapsed = Date.now() - startedAt;
+      const wait = Math.max(0, targetMs - elapsed);
+      await new Promise((r) => setTimeout(r, wait));
+
+      setModal({ kind: "revelando", premio, ganadores: nuevos });
+      fanfare.playReveal();
+      await refrescar();
+    } catch (err) {
+      setModal({ kind: "error", message: safeMessage(err) });
+    }
+  }
+
   async function verGanadores(premio: PremioConfig) {
     if (!supabase) return;
     const { data, error } = await supabase.rpc("get_sorteo_ganadores", {
@@ -755,10 +823,46 @@ function SortearAutenticado({
         />
       ) : null}
 
+      {modal.kind === "resorteando" ? (
+        <SorteandoOverlay
+          premio={modal.premio}
+          onTick={fanfare.playTick}
+        />
+      ) : null}
+
+      {modal.kind === "confirmando-resorteo" ? (
+        <ConfirmacionResorteoOverlay
+          premio={modal.premio}
+          ganadorAnterior={modal.ganadorAnterior}
+          onConfirmar={() => {
+            void resortearNoPresente(modal.premio, modal.ganadorAnterior);
+          }}
+          onCancelar={() => {
+            setModal({
+              kind: "revelando",
+              premio: modal.premio,
+              ganadores: [modal.ganadorAnterior],
+            });
+          }}
+        />
+      ) : null}
+
       {modal.kind === "revelando" ? (
         <RevelacionOverlay
           premio={modal.premio}
           ganadores={modal.ganadores}
+          onResortear={
+            modal.premio.requierePresencia && modal.ganadores.length === 1
+              ? () => {
+                  const ganador = modal.ganadores[0]!;
+                  setModal({
+                    kind: "confirmando-resorteo",
+                    premio: modal.premio,
+                    ganadorAnterior: ganador,
+                  });
+                }
+              : undefined
+          }
           onClose={() => {
             setModal({ kind: "idle" });
             setPickerAbierto(false);
@@ -963,6 +1067,69 @@ function PremioCard({
         )}
       </div>
     </li>
+  );
+}
+
+/* ===========================================================================
+ * Overlay: Confirmación de re-sorteo cuando el ganador no está presente.
+ * Pop-up chico, no es para la audiencia: confirma que el operador realmente
+ * quiere descartar al ganador anunciado y elegir un reemplazo.
+ * =========================================================================== */
+function ConfirmacionResorteoOverlay({
+  premio,
+  ganadorAnterior,
+  onConfirmar,
+  onCancelar,
+}: {
+  premio: PremioConfig;
+  ganadorAnterior: Ganador;
+  onConfirmar: () => void;
+  onCancelar: () => void;
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/85 px-6 backdrop-blur"
+    >
+      <div className="w-full max-w-lg rounded-3xl border border-white/15 bg-[#161616] p-7 text-white shadow-[0_30px_80px_rgba(0,0,0,0.6)] sm:p-9">
+        <p className="text-xs font-bold uppercase tracking-[0.32em] text-mascoteada-orange">
+          Re-sortear
+        </p>
+        <h3 className="mt-3 text-2xl font-bold leading-tight sm:text-3xl">
+          ¿Confirmás que el ganador no está presente?
+        </h3>
+        <p className="mt-3 text-sm text-white/65 sm:text-base">
+          Vamos a descartar a{" "}
+          <span className="font-semibold text-white">
+            {ganadorAnterior.nombre} {ganadorAnterior.apellido}
+          </span>{" "}
+          y elegir otro ganador para{" "}
+          <span className="font-semibold text-white">{premio.nombre}</span>.
+        </p>
+        <p className="mt-2 text-xs text-white/40">
+          Quedará registrado como descartado por ausencia.
+        </p>
+        <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onCancelar}
+            className="rounded-2xl border border-white/15 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-white/75 transition hover:bg-white/[0.10] hover:text-white"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            autoFocus
+            onClick={onConfirmar}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-mascoteada-orange px-6 py-3 text-sm font-bold uppercase tracking-[0.18em] text-white shadow-[0_15px_40px_rgba(254,134,39,0.35)] transition hover:brightness-110"
+          >
+            <RefreshIcon />
+            Sí, re-sortear
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1187,11 +1354,15 @@ function RevelacionOverlay({
   ganadores,
   modoRevista = false,
   onClose,
+  onResortear,
 }: {
   premio: PremioConfig;
   ganadores: Ganador[];
   modoRevista?: boolean;
   onClose: () => void;
+  /** Si está, muestra un botón "Re-sortear · ganador ausente" en el footer.
+   *  Solo aplica para premios con `requierePresencia` y 1 solo ganador. */
+  onResortear?: () => void;
 }) {
   // Modo "denso": cuando hay muchos ganadores, comprimimos header y cards para
   // que entren más nombres en pantalla con menos scroll (caso 100 cupones).
@@ -1309,19 +1480,31 @@ function RevelacionOverlay({
       </div>
 
       <footer className="absolute inset-x-0 bottom-0 z-20 border-t border-white/10 bg-black/85 px-6 py-5 backdrop-blur sm:px-12">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4">
           <p className="text-sm font-semibold text-white/65">
             {modoRevista
               ? "¡Felicitaciones a los ganadores!"
               : "¡Felicitaciones a todos los ganadores!"}
           </p>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-2xl bg-white px-6 py-3 text-sm font-bold uppercase tracking-[0.18em] text-black transition hover:brightness-95"
-          >
-            Cerrar
-          </button>
+          <div className="flex items-center gap-3">
+            {onResortear ? (
+              <button
+                type="button"
+                onClick={onResortear}
+                className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/[0.06] px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white/85 transition hover:border-mascoteada-orange hover:bg-white/[0.10] hover:text-white"
+              >
+                <RefreshIcon />
+                Re-sortear · ganador ausente
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-2xl bg-white px-6 py-3 text-sm font-bold uppercase tracking-[0.18em] text-black transition hover:brightness-95"
+            >
+              Cerrar
+            </button>
+          </div>
         </div>
       </footer>
     </div>
@@ -1409,6 +1592,20 @@ function UndoIcon() {
     <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
       <path
         d="M9 14l-4-4 4-4M5 10h9a5 5 0 0 1 0 10h-3"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function RefreshIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
+      <path
+        d="M3 12a9 9 0 0 1 15.5-6.3M21 4v5h-5M21 12a9 9 0 0 1-15.5 6.3M3 20v-5h5"
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinecap="round"

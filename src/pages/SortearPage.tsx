@@ -54,6 +54,12 @@ const PREMIOS: readonly PremioConfig[] = [
     sponsorLogo: "Logo Mate Rojo.png",
   },
   {
+    id: "serin-cupones-50",
+    nombre: "100 Cupones 50% OFF · Pinturerías Serin",
+    cantidad: 100,
+    sponsorLogo: "Logo Serin.png",
+  },
+  {
     id: "tv-noblex-43",
     nombre: 'TV LED 43" Noblex',
     cantidad: 1,
@@ -1187,6 +1193,10 @@ function RevelacionOverlay({
   modoRevista?: boolean;
   onClose: () => void;
 }) {
+  // Modo "denso": cuando hay muchos ganadores, comprimimos header y cards para
+  // que entren más nombres en pantalla con menos scroll (caso 100 cupones).
+  const denso = ganadores.length > 30;
+
   return (
     <div
       role="dialog"
@@ -1204,10 +1214,18 @@ function RevelacionOverlay({
         }}
       />
 
-      <header className="relative z-10 px-6 pt-8 sm:px-12 sm:pt-10">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-4 text-center">
+      <header
+        className={`relative z-10 px-6 sm:px-12 ${denso ? "pt-5 sm:pt-6" : "pt-8 sm:pt-10"}`}
+      >
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-3 text-center sm:gap-4">
           {premio.sponsorLogo ? (
-            <div className="flex h-64 w-auto items-center justify-center rounded-3xl bg-white px-12 py-8 shadow-[0_20px_60px_rgba(0,0,0,0.4)] ring-1 ring-white/10 sm:h-80 sm:px-20 sm:py-10">
+            <div
+              className={`flex w-auto items-center justify-center rounded-3xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.4)] ring-1 ring-white/10 ${
+                denso
+                  ? "h-32 px-8 py-5 sm:h-40 sm:px-12 sm:py-6"
+                  : "h-64 px-12 py-8 sm:h-80 sm:px-20 sm:py-10"
+              }`}
+            >
               <img
                 src={sponsorLogoSrc(premio.sponsorLogo)}
                 alt=""
@@ -1220,7 +1238,11 @@ function RevelacionOverlay({
               ? pluralizar(ganadores.length, "Ganador", "Ganadores")
               : `¡${pluralizar(ganadores.length, "Ganador", "Ganadores")}!`}
           </p>
-          <h2 className="text-2xl font-bold leading-tight sm:text-4xl">
+          <h2
+            className={`font-bold leading-tight ${
+              denso ? "text-xl sm:text-3xl" : "text-2xl sm:text-4xl"
+            }`}
+          >
             {premio.nombre}
           </h2>
           <p className="text-base text-white/55 sm:text-lg">
@@ -1230,36 +1252,52 @@ function RevelacionOverlay({
         </div>
       </header>
 
-      <div className="relative z-10 flex-1 overflow-y-auto px-6 pb-32 pt-8 sm:px-12">
-        <ul className="mx-auto flex w-full max-w-6xl flex-wrap justify-center gap-3">
+      <div
+        className={`relative z-10 flex-1 overflow-y-auto px-6 pb-32 sm:px-12 ${denso ? "pt-4" : "pt-8"}`}
+      >
+        <ul
+          className={`mx-auto flex w-full flex-wrap justify-center ${
+            denso ? "max-w-7xl gap-2" : "max-w-6xl gap-3"
+          }`}
+        >
           {ganadores.map((g, idx) => {
             const basisClase =
               ganadores.length <= 3
                 ? "w-full max-w-sm sm:basis-[calc(33.333%-0.5rem)]"
                 : ganadores.length <= 12
                   ? "basis-[calc(50%-0.375rem)] sm:basis-[calc(33.333%-0.5rem)] md:basis-[calc(25%-0.5625rem)]"
-                  : "basis-[calc(50%-0.375rem)] sm:basis-[calc(33.333%-0.5rem)] md:basis-[calc(25%-0.5625rem)] lg:basis-[calc(20%-0.6rem)]";
+                  : ganadores.length <= 30
+                    ? "basis-[calc(50%-0.375rem)] sm:basis-[calc(33.333%-0.5rem)] md:basis-[calc(25%-0.5625rem)] lg:basis-[calc(20%-0.6rem)]"
+                    : "basis-[calc(33.333%-0.375rem)] sm:basis-[calc(25%-0.375rem)] md:basis-[calc(20%-0.4rem)] lg:basis-[calc(16.666%-0.4rem)] xl:basis-[calc(14.285%-0.4286rem)]";
             return (
               <li
                 key={g.usuario_id}
-                className={`flex flex-col items-center rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-center backdrop-blur ${basisClase} ${
-                  modoRevista ? "" : "winner-drop"
-                }`}
+                className={`flex flex-col items-center rounded-xl border border-white/10 bg-white/[0.06] text-center backdrop-blur ${
+                  denso ? "px-2 py-2" : "rounded-2xl px-4 py-3"
+                } ${basisClase} ${modoRevista ? "" : "winner-drop"}`}
                 style={
                   modoRevista
                     ? undefined
                     : ({
-                        "--winner-delay": `${Math.min(idx * 45, 1800)}ms`,
+                        "--winner-delay": `${Math.min(idx * 25, 1800)}ms`,
                       } as CSSProperties)
                 }
               >
-                <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-mascoteada-orange">
+                <span
+                  className={`font-semibold uppercase tracking-[0.22em] text-mascoteada-orange ${
+                    denso ? "text-[9px]" : "text-[10px]"
+                  }`}
+                >
                   #{g.posicion}
                 </span>
-                <p className="mt-1 text-base font-bold leading-tight sm:text-lg">
+                <p
+                  className={`mt-0.5 font-bold leading-tight ${
+                    denso ? "text-xs sm:text-sm" : "mt-1 text-base sm:text-lg"
+                  }`}
+                >
                   {g.nombre} {g.apellido}
                 </p>
-                {g.nombres_mascotas ? (
+                {!denso && g.nombres_mascotas ? (
                   <p className="mt-0.5 truncate text-xs text-white/55">
                     con {g.nombres_mascotas}
                   </p>

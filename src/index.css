@@ -226,3 +226,114 @@ button {
     var(--winner-delay, 0ms) both;
   will-change: transform, opacity;
 }
+
+/* ====== Pantalla "próximamente" de Animal World ======
+ *
+ * El logo respira suavemente, los textos entran con un fade-up escalonado y
+ * la barra de progreso muestra un shimmer continuo para que se sienta viva
+ * incluso aunque el valor avance lentamente con el paso de los días. */
+@keyframes coming-breathe {
+  0%,
+  100% {
+    transform: translateY(0);
+    filter: drop-shadow(0 18px 35px rgba(254, 134, 39, 0.22));
+  }
+  50% {
+    transform: translateY(-6px);
+    filter: drop-shadow(0 26px 60px rgba(254, 134, 39, 0.34));
+  }
+}
+
+.coming-logo {
+  animation: coming-breathe 4.6s ease-in-out infinite;
+  will-change: transform, filter;
+}
+
+@keyframes coming-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.coming-fade-in {
+  animation: coming-fade-up 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes coming-progress-shimmer {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 220% 50%;
+  }
+}
+
+.coming-progress-fill {
+  background-image: linear-gradient(
+    90deg,
+    #fe8627 0%,
+    #ffb066 38%,
+    #ffd792 50%,
+    #ffb066 62%,
+    #fe8627 100%
+  );
+  background-size: 220% 100%;
+  background-position: 0% 50%;
+  animation: coming-progress-shimmer 2.8s linear infinite;
+  transition: width 900ms cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 0 22px rgba(254, 134, 39, 0.55);
+}
+
+@keyframes coming-paw-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(var(--paw-rotate, 0deg));
+  }
+  50% {
+    transform: translate3d(0, -14px, 0)
+      rotate(calc(var(--paw-rotate, 0deg) + 6deg));
+  }
+}
+
+.coming-paw {
+  animation-name: coming-paw-float;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+@keyframes coming-dot {
+  0%,
+  60%,
+  100% {
+    transform: scale(1);
+    opacity: 0.45;
+  }
+  30% {
+    transform: scale(1.6);
+    opacity: 1;
+  }
+}
+
+.coming-dot {
+  animation: coming-dot 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coming-logo,
+  .coming-paw,
+  .coming-progress-fill,
+  .coming-dot,
+  .coming-fade-in {
+    animation: none !important;
+  }
+  .coming-fade-in {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
